@@ -1,6 +1,7 @@
 # OmniAuth::OpenIDConnect
 
-TODO: Write a gem description
+OpenID Connect strategy for OmniAuth
+[![Build Status](https://travis-ci.org/jjbohn/omniauth-openid-connect.png?branch=master)](https://travis-ci.org/jjbohn/omniauth-openid-connect)
 
 ## Installation
 
