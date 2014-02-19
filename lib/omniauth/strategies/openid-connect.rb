@@ -1,9 +1,14 @@
+require 'addressable/uri'
+require "net/http"
 require 'omniauth'
+require "openid_connect"
 
 module OmniAuth
   module Strategies
     class OpenIDConnect
       include OmniAuth::Strategy
+
+      attr_accessor :access_token
 
       option :client_options, {
         identifier: nil,
@@ -16,7 +21,7 @@ module OmniAuth
         token_endpoint: "/token",
         userinfo_endpoint: "/userinfo"
       }
-      option :scope, "openid"
+      option :scope, [:openid]
       option :response_type, "code"
       option :state
       option :response_mode
@@ -28,34 +33,57 @@ module OmniAuth
       option :login_hint
       option :acr_values
 
-      def option(name, value = nil, valid_values = nil)
-        if valid_values.nil? || value.nil? || valid_values.include(value)
-          super(name, value)
-        else
-          ArgumentError.new("#{valud} is not a valid value for #{name}. Valid values are #{valid_values.join(", ")}")
-        end
-      end
-
-      def required_client_attributes
-        { identifier: options.client_id }
-      end
-
-      def client_attributes
-        options.client_options.merge({
-          identifier: options.client_id,
-
-
-        })
-      end
+      uid { user_info.sub }
 
       def client
-        @client ||= ::OpenIDConnect::Client.new(client_attributes)
+        @client ||= ::OpenIDConnect::Client.new(client_options)
       end
 
       def request_phase
-        redirect "#{option.scheme}://#{option.host}:#{options.port}#{options.authorization_endpoint}"
+        redirect authorize_uri
+      end
+
+
+      def callback_phase
+        client.redirect_uri = client_options.redirect_uri
+        client.authorization_code = authorization_code
+        @access_token = client.access_token!
+        super
+      end
+
+      def authorization_code
+        request.params["code"]
+      end
+
+      private
+
+      def user_info
+        @user_info ||= access_token.userinfo!
+      end
+
+      def authorize_uri
+        client.redirect_uri = client_options.redirect_uri
+        client.authorization_uri(
+          response_type: options.response_type,
+          scope: options.scope,
+          nonce: nonce,
+        )
+      end
+
+
+      def client_options
+        options.client_options
+      end
+
+      def nonce
+        session[:nonce] = SecureRandom.hex(16)
+      end
+
+      def session
+        @env.nil? ? {} : super
       end
     end
   end
 end
 
+OmniAuth.config.add_camelization 'openid-connect', 'OpenIDConnect'

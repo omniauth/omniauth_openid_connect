@@ -17,11 +17,16 @@ Gem::Specification.new do |spec|
   spec.test_files    = spec.files.grep(%r{^(test|spec|features)/})
   spec.require_paths = ["lib"]
 
-  spec.add_dependency 'omniauth', '~> 1.2.1'
+  spec.add_dependency 'omniauth', '~> 1.1.4'
   spec.add_dependency 'openid_connect', '~> 0.7.3'
+  spec.add_dependency 'addressable', '~> 2.3.5'
   spec.add_development_dependency "bundler", "~> 1.5"
+  spec.add_development_dependency "minitest"
+  spec.add_development_dependency "mocha"
   spec.add_development_dependency "guard"
   spec.add_development_dependency "guard-minitest"
-  spec.add_development_dependency "minitest"
+  spec.add_development_dependency "guard-bundler"
   spec.add_development_dependency "rake"
+  spec.add_development_dependency "simplecov"
+  spec.add_development_dependency "pry"
 end
