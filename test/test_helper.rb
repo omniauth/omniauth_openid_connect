@@ -2,6 +2,9 @@ require 'simplecov'
 SimpleCov.command_name 'test'
 SimpleCov.start
 
+require 'coveralls'
+Coveralls.wear!
+
 require 'minitest/autorun'
 require 'mocha/mini_test'
 require_relative '../lib/omniauth-openid-connect'
