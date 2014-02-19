@@ -86,4 +86,4 @@ module OmniAuth
   end
 end
 
-OmniAuth.config.add_camelization 'openid-connect', 'OpenIDConnect'
+OmniAuth.config.add_camelization 'openid_connect', 'OpenIDConnect'
