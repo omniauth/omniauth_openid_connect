@@ -43,7 +43,6 @@ module OmniAuth
         redirect authorize_uri
       end
 
-
       def callback_phase
         client.redirect_uri = client_options.redirect_uri
         client.authorization_code = authorization_code
@@ -69,7 +68,6 @@ module OmniAuth
           nonce: nonce,
         )
       end
-
 
       def client_options
         options.client_options
