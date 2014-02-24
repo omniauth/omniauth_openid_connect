@@ -21,7 +21,9 @@ Or install it yourself as:
 
 ## Usage
 
-TODO: Write usage instructions here
+Still quite a bit of work to get this gem ready for real production usage.
+Hoping to have a good working version by mid March 2014. If you'd like to help
+out, I'd love some contributions.
 
 ## Contributing
 
