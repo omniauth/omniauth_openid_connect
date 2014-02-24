@@ -7,6 +7,7 @@ Coveralls.wear!
 
 require 'minitest/autorun'
 require 'mocha/mini_test'
+require 'faker'
 require_relative '../lib/omniauth-openid-connect'
 
 OmniAuth.config.test_mode = true
@@ -29,9 +30,9 @@ class StrategyTestCase < MiniTest::Test
 
   def user_info
     @user_info ||= stub('OpenIDConnect::ResponseObject::UserInfo').tap do |info|
-      info.stubs(:sub).returns("19349xw")
-      info.stubs(:name).returns("John Bohn")
-      info.stubs(:email).returns("jjbohn@gmail.com")
+      info.stubs(:sub).returns(SecureRandom.hex(16))
+      info.stubs(:name).returns(Faker::Name.name)
+      info.stubs(:email).returns(Faker::Internet.email)
     end
   end
 
