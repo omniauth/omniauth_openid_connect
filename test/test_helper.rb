@@ -29,17 +29,17 @@ class StrategyTestCase < MiniTest::Test
   end
 
   def user_info
-    @user_info ||= stub('OpenIDConnect::ResponseObject::UserInfo').tap do |info|
-      info.stubs(:sub).returns(SecureRandom.hex(16))
-      info.stubs(:name).returns(Faker::Name.name)
-      info.stubs(:email).returns(Faker::Internet.email)
-      info.stubs(:nickname).returns(Faker::Internet.user_name)
-      info.stubs(:given_name).returns(Faker::Name.first_name)
-      info.stubs(:family_name).returns(Faker::Name.last_name)
-      info.stubs(:picture).returns(Faker::Internet.url + ".png")
-      info.stubs(:phone_number).returns(Faker::PhoneNumber.phone_number)
-      info.stubs(:website).returns(Faker::Internet.url)
-    end
+    @user_info ||= OpenIDConnect::ResponseObject::UserInfo::OpenID.new(
+      sub: SecureRandom.hex(16),
+      name: Faker::Name.name,
+      email: Faker::Internet.email,
+      nickname: Faker::Internet.user_name,
+      given_name: Faker::Name.first_name,
+      family_name: Faker::Name.last_name,
+      picture: Faker::Internet.url + ".png",
+      phone_number: Faker::PhoneNumber.phone_number,
+      website: Faker::Internet.url,
+    )
   end
 
   def request
