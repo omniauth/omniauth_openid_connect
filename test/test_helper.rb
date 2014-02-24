@@ -57,6 +57,7 @@ class StrategyTestCase < MiniTest::Test
       strategy.options.client_options.identifier = @identifier
       strategy.options.client_options.secret = @secret
       strategy.stubs(:request).returns(request)
+      strategy.stubs(:user_info).returns(user_info)
     end
   end
 end

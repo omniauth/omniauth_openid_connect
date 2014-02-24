@@ -49,7 +49,7 @@ module OmniAuth
       end
 
       extra do
-        user_info.as_json
+        { raw_info: user_info.as_json } # UserInfo#as_json actually returns a hash
       end
 
       def client

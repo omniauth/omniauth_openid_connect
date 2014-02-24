@@ -16,8 +16,6 @@ class OmniAuth::Strategies::OpenIDConnectTest < StrategyTestCase
   end
 
   def test_uid
-    strategy.expects(:user_info).returns(user_info)
-
     assert_equal user_info.sub, strategy.uid
   end
 
@@ -26,6 +24,7 @@ class OmniAuth::Strategies::OpenIDConnectTest < StrategyTestCase
     request.stubs(:params).returns({"code" => code})
     request.stubs(:path_info).returns("")
 
+    strategy.unstub(:user_info)
     access_token = stub('OpenIDConnect::AccessToken')
     client.expects(:access_token!).returns(access_token)
     access_token.expects(:userinfo!).returns(user_info)
@@ -35,8 +34,6 @@ class OmniAuth::Strategies::OpenIDConnectTest < StrategyTestCase
   end
 
   def test_info
-    strategy.stubs(:user_info).returns(user_info)
-
     info = strategy.info
     assert_equal user_info.name, info[:name]
     assert_equal user_info.email, info[:email]
@@ -46,5 +43,9 @@ class OmniAuth::Strategies::OpenIDConnectTest < StrategyTestCase
     assert_equal user_info.picture, info[:image]
     assert_equal user_info.phone_number, info[:phone]
     assert_equal({ website: user_info.website }, info[:urls])
+  end
+
+  def test_extra
+    assert_equal({ raw_info: user_info.as_json}, strategy.extra)
   end
 end
