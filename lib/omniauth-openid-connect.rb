@@ -1,1 +1,1 @@
-require "omniauth/openid-connect"
+require "omniauth/openid_connect"

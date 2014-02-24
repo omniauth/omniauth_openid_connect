@@ -48,6 +48,10 @@ module OmniAuth
         }
       end
 
+      extra do
+        user_info.as_json
+      end
+
       def client
         @client ||= ::OpenIDConnect::Client.new(client_options)
       end
