@@ -46,6 +46,6 @@ class OmniAuth::Strategies::OpenIDConnectTest < StrategyTestCase
   end
 
   def test_extra
-    assert_equal({ raw_info: user_info.as_json}, strategy.extra)
+    assert_equal({ raw_info: user_info.as_json }, strategy.extra)
   end
 end
