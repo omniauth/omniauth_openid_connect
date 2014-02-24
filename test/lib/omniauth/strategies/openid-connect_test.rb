@@ -32,6 +32,8 @@ class OmniAuth::Strategies::OpenIDConnectTest < StrategyTestCase
 
     user_info = stub('OpenIDConnect::ResponseObject::UserInfo')
     user_info.expects(:sub)
+    user_info.expects(:name)
+    user_info.expects(:email)
     access_token = stub('OpenIDConnect::AccessToken')
     access_token.expects(:userinfo!).returns(user_info)
 
@@ -40,4 +42,18 @@ class OmniAuth::Strategies::OpenIDConnectTest < StrategyTestCase
     strategy.call!({"rack.session" => {}})
     strategy.callback_phase
   end
+
+  def test_info
+    name = "Rorschach"
+    email = "Rorschach@watchmen.com"
+    user_info = stub('OpenIDConnect::ResponseObject::UserInfo')
+    user_info.expects(:name).returns(name)
+    user_info.expects(:email).returns(email)
+    strategy.stubs(:user_info).returns(user_info)
+    info = strategy.info
+
+    assert_equal name, info[:name]
+    assert_equal email, info[:email]
+  end
+
 end

@@ -35,6 +35,13 @@ module OmniAuth
 
       uid { user_info.sub }
 
+      info do
+        {
+          name: user_info.name,
+          email: user_info.email,
+        }
+      end
+
       def client
         @client ||= ::OpenIDConnect::Client.new(client_options)
       end
