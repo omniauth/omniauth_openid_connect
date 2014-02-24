@@ -16,12 +16,9 @@ class OmniAuth::Strategies::OpenIDConnectTest < StrategyTestCase
   end
 
   def test_uid
-    subscriber_id = "1234"
-    user_info = stub('OpenIDConnect::ResponseObject::UserInfo')
-    user_info.expects(:sub).returns(subscriber_id)
-    strategy.stubs(:user_info).returns(user_info)
+    strategy.expects(:user_info).returns(user_info)
 
-    assert_equal subscriber_id, strategy.uid
+    assert_equal user_info.sub, strategy.uid
   end
 
   def test_callback_phase
@@ -30,14 +27,19 @@ class OmniAuth::Strategies::OpenIDConnectTest < StrategyTestCase
     request.stubs(:params).returns({"code" => code})
     request.stubs(:path_info).returns("")
 
-    user_info = stub('OpenIDConnect::ResponseObject::UserInfo')
-    user_info.expects(:sub)
     access_token = stub('OpenIDConnect::AccessToken')
-    access_token.expects(:userinfo!).returns(user_info)
-
     client.expects(:access_token!).returns(access_token)
+    access_token.expects(:userinfo!).returns(user_info)
 
     strategy.call!({"rack.session" => {}})
     strategy.callback_phase
+  end
+
+  def test_info
+    strategy.stubs(:user_info).returns(user_info)
+
+    info = strategy.info
+    assert_equal user_info.name, info[:name]
+    assert_equal user_info.email, info[:email]
   end
 end

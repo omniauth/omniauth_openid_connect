@@ -27,6 +27,14 @@ class StrategyTestCase < MiniTest::Test
     strategy.client
   end
 
+  def user_info
+    @user_info ||= stub('OpenIDConnect::ResponseObject::UserInfo').tap do |info|
+      info.stubs(:sub).returns("19349xw")
+      info.stubs(:name).returns("John Bohn")
+      info.stubs(:email).returns("jjbohn@gmail.com")
+    end
+  end
+
   def request
     @request ||= stub('Request').tap do |request|
       request.stubs(:params).returns({})
