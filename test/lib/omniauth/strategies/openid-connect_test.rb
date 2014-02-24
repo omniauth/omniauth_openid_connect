@@ -22,7 +22,6 @@ class OmniAuth::Strategies::OpenIDConnectTest < StrategyTestCase
   end
 
   def test_callback_phase
-    redirect_uri = "https://example.com/auth/callback"
     code = SecureRandom.hex(16)
     request.stubs(:params).returns({"code" => code})
     request.stubs(:path_info).returns("")
