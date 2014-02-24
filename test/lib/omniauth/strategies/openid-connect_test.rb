@@ -40,5 +40,11 @@ class OmniAuth::Strategies::OpenIDConnectTest < StrategyTestCase
     info = strategy.info
     assert_equal user_info.name, info[:name]
     assert_equal user_info.email, info[:email]
+    assert_equal user_info.nickname, info[:nickname]
+    assert_equal user_info.given_name, info[:first_name]
+    assert_equal user_info.family_name, info[:last_name]
+    assert_equal user_info.picture, info[:image]
+    assert_equal user_info.phone_number, info[:phone]
+    assert_equal({ website: user_info.website }, info[:urls])
   end
 end
