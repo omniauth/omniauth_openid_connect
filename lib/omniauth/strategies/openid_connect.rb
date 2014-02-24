@@ -52,6 +52,10 @@ module OmniAuth
         { raw_info: user_info.as_json } # UserInfo#as_json actually returns a hash
       end
 
+      credentials do
+        { token: access_token.access_token }
+      end
+
       def client
         @client ||= ::OpenIDConnect::Client.new(client_options)
       end
@@ -63,7 +67,7 @@ module OmniAuth
       def callback_phase
         client.redirect_uri = client_options.redirect_uri
         client.authorization_code = authorization_code
-        @access_token = client.access_token!
+        access_token
         super
       end
 
@@ -75,6 +79,10 @@ module OmniAuth
 
       def user_info
         @user_info ||= access_token.userinfo!
+      end
+
+      def access_token
+        @access_token ||= client.access_token!
       end
 
       def authorize_uri
