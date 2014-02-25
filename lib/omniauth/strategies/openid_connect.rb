@@ -8,8 +8,6 @@ module OmniAuth
     class OpenIDConnect
       include OmniAuth::Strategy
 
-      attr_reader :access_token
-
       option :client_options, {
         identifier: nil,
         secret: nil,
