@@ -9,6 +9,7 @@ Gem::Specification.new do |spec|
   spec.authors       = ["John Bohn"]
   spec.email         = ["jjbohn@gmail.com"]
   spec.summary       = %q{OpenID Connect Strategy for OmniAuth}
+  spec.description   = %q{OpenID Connect Strategy for OmniAuth}
   spec.homepage      = "https://github.com/jjbohn/omniauth-openid-connect"
   spec.license       = "MIT"
 
