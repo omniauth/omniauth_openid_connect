@@ -37,7 +37,7 @@ module OmniAuth
         {
           name: user_info.name,
           email: user_info.email,
-          nickname: user_info.nickname,
+          nickname: user_info.preferred_username,
           first_name: user_info.given_name,
           last_name: user_info.family_name,
           image: user_info.picture,
