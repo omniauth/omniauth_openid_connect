@@ -22,9 +22,34 @@ Or install it yourself as:
 
 ## Usage
 
-Still quite a bit of work to get this gem ready for real production usage.
-Hoping to have a good working version by mid March 2014. If you'd like to help
-out, I'd love some contributions.
+Example configuration
+```ruby
+config.omniauth :openid_connect, {
+  name: :my_provider,
+  scope: [:openid, :email, :profile, :address],
+  response_type: :code,
+  client_options: {
+    port: 443,
+    scheme: "https",
+    host: "myprovider.com",
+    identifier: ENV["OP_CLIENT_ID"],
+    secret: ENV["OP_SECRET_KEY"],
+    redirect_uri: "http://myapp.com/users/auth/openid_connect/callback",
+  },
+}
+```
+
+Configuration details:
+  * `name` is arbitrary, I recommend using the name of your provider. The name
+  configuration exists because you could be using multiple OpenID Connect
+  providers in a single app.
+  * Although `response_type` is an available option, currently, only `:code`
+  is valid. There are plans to bring in implicit flow and hybrid flow at some
+  point, but it hasn't come up yet for me. Those flows aren't best practive for
+  server side web apps anyway and are designed more for native/mobile apps.
+
+For the full low down on OpenID Connect, please check out
+[the spec](http://openid.net/specs/openid-connect-core-1_0.html).
 
 ## Contributing
 
