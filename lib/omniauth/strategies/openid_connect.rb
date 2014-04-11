@@ -73,6 +73,15 @@ module OmniAuth
         request.params["code"]
       end
 
+      def authorize_uri
+        client.redirect_uri = client_options.redirect_uri
+        client.authorization_uri(
+          response_type: options.response_type,
+          scope: options.scope,
+          nonce: nonce,
+        )
+      end
+
       private
 
       def user_info
@@ -81,15 +90,6 @@ module OmniAuth
 
       def access_token
         @access_token ||= client.access_token!
-      end
-
-      def authorize_uri
-        client.redirect_uri = client_options.redirect_uri
-        client.authorization_uri(
-          response_type: options.response_type,
-          scope: options.scope,
-          nonce: nonce,
-        )
       end
 
       def client_options
