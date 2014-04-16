@@ -57,4 +57,16 @@ class OmniAuth::Strategies::OpenIDConnectTest < StrategyTestCase
 
     assert_equal({ token: access_token.access_token }, strategy.credentials)
   end
+
+  def test_failure_endpoint_redirect
+    OmniAuth.config.stubs(:failure_raise_out_environments).returns([])
+    strategy.stubs(:env).returns({})
+    request.stubs(:params).returns({"error" => "access denied"})
+
+    result = strategy.callback_phase
+
+    assert(result.is_a? Array)
+    assert(result[0] == 302, "Redirect")
+    assert(result[1]["Location"] =~ /\/auth\/failure/)
+  end
 end
