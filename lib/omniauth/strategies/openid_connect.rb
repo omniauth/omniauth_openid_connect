@@ -30,6 +30,7 @@ module OmniAuth
       option :id_token_hint
       option :login_hint
       option :acr_values
+      option :send_nonce, true
 
       uid { user_info.sub }
 
@@ -75,11 +76,12 @@ module OmniAuth
 
       def authorize_uri
         client.redirect_uri = client_options.redirect_uri
-        client.authorization_uri(
+        opts = {
           response_type: options.response_type,
           scope: options.scope,
-          nonce: nonce,
-        )
+          nonce: (nonce if options.send_nonce),
+        }
+        client.authorization_uri(opts.reject { |k, v| v.nil? })
       end
 
       private
