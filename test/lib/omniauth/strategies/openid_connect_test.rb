@@ -57,4 +57,20 @@ class OmniAuth::Strategies::OpenIDConnectTest < StrategyTestCase
 
     assert_equal({ token: access_token.access_token }, strategy.credentials)
   end
+
+  def test_option_client_auth_method
+    opts = strategy.options.client_options
+    opts[:host] = "foobar.com"
+    strategy.options.client_auth_method = :not_basic
+    success = Struct.new(:status).new(200)
+
+    HTTPClient.any_instance.stubs(:post).with(
+      "#{opts.scheme}://#{opts.host}:#{opts.port}#{opts.token_endpoint}",
+      {:grant_type => :client_credentials, :client_id => @identifier, :client_secret => @secret},
+      {}
+    ).returns(success)
+    OpenIDConnect::Client.any_instance.stubs(:handle_success_response).with(success).returns(true)
+
+    assert(strategy.send :access_token)
+  end
 end
