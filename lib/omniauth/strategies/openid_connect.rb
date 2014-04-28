@@ -47,7 +47,7 @@ module OmniAuth
       end
 
       extra do
-        { raw_info: user_info.as_json } # UserInfo#as_json actually returns a hash
+        { raw_info: user_info.raw_attributes }
       end
 
       credentials do
