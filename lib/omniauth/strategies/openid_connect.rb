@@ -40,6 +40,7 @@ module OmniAuth
           nickname: user_info.preferred_username,
           first_name: user_info.given_name,
           last_name: user_info.family_name,
+          gender: user_info.gender,
           image: user_info.picture,
           phone: user_info.phone_number,
           urls: { website: user_info.website }
