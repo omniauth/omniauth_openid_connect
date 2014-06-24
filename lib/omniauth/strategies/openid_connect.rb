@@ -52,7 +52,10 @@ module OmniAuth
       end
 
       credentials do
-        { token: access_token.access_token }
+        {
+          token: access_token.access_token,
+          refresh_token: access_token.refresh_token
+        }
       end
 
       def client
