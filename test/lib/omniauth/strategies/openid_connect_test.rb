@@ -28,6 +28,8 @@ class OmniAuth::Strategies::OpenIDConnectTest < StrategyTestCase
     access_token = stub('OpenIDConnect::AccessToken')
     access_token.stubs(:access_token)
     access_token.stubs(:refresh_token)
+    access_token.stubs(:expires_in)
+    access_token.stubs(:scope)
     client.expects(:access_token!).returns(access_token)
     access_token.expects(:userinfo!).returns(user_info)
 
@@ -56,12 +58,17 @@ class OmniAuth::Strategies::OpenIDConnectTest < StrategyTestCase
     access_token = stub('OpenIDConnect::AccessToken')
     access_token.stubs(:access_token).returns(SecureRandom.hex(16))
     access_token.stubs(:refresh_token).returns(SecureRandom.hex(16))
+    access_token.stubs(:expires_in).returns(Time.now)
+    access_token.stubs(:scope).returns("openidconnect")
 
     client.expects(:access_token!).returns(access_token)
     access_token.expects(:refresh_token).returns(access_token.refresh_token)
+    access_token.expects(:expires_in).returns(access_token.expires_in)
 
     assert_equal({ token: access_token.access_token,
-                   refresh_token: access_token.refresh_token
+                   refresh_token: access_token.refresh_token,
+                   expires_in: access_token.expires_in,
+                   scope: access_token.scope
                  }, strategy.credentials)
   end
 end
