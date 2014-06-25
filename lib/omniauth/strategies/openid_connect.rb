@@ -54,7 +54,8 @@ module OmniAuth
       credentials do
         {
           token: access_token.access_token,
-          refresh_token: access_token.refresh_token
+          refresh_token: access_token.refresh_token,
+          expires_in: access_token.expires_in,
         }
       end
 
