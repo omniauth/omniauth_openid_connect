@@ -84,7 +84,7 @@ module OmniAuth
         client.authorization_uri(
           response_type: options.response_type,
           scope: options.scope,
-          nonce: nonce,
+          nonce: nonce
         )
       end
 
@@ -95,7 +95,7 @@ module OmniAuth
       end
 
       def access_token
-        @access_token ||= client.access_token!
+        @access_token ||= client.access_token!(scope: options.scope)
       end
 
       def client_options
