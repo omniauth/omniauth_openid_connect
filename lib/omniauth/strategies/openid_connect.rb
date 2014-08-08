@@ -84,7 +84,7 @@ module OmniAuth
         client.authorization_uri(
           response_type: options.response_type,
           scope: options.scope,
-          nonce: nonce
+          nonce: nonce,
         )
       end
 
