@@ -138,6 +138,51 @@ class OmniAuth::Strategies::OpenIDConnectTest < StrategyTestCase
     strategy.callback_phase
   end
 
+  def test_callback_phase_with_timeout
+    code = SecureRandom.hex(16)
+    state = SecureRandom.hex(16)
+    nonce = SecureRandom.hex(16)
+    request.stubs(:params).returns({'code' => code,'state' => state})
+    request.stubs(:path_info).returns('')
+
+    strategy.options.issuer = 'example.com'
+
+    strategy.stubs(:access_token).raises(::Timeout::Error.new('error'))
+    strategy.call!({'rack.session' => {'omniauth.state' => state, 'omniauth.nonce' => nonce}})
+    strategy.expects(:fail!)
+    strategy.callback_phase
+  end
+
+  def test_callback_phase_with_etimeout
+    code = SecureRandom.hex(16)
+    state = SecureRandom.hex(16)
+    nonce = SecureRandom.hex(16)
+    request.stubs(:params).returns({'code' => code,'state' => state})
+    request.stubs(:path_info).returns('')
+
+    strategy.options.issuer = 'example.com'
+
+    strategy.stubs(:access_token).raises(::Errno::ETIMEDOUT.new('error'))
+    strategy.call!({'rack.session' => {'omniauth.state' => state, 'omniauth.nonce' => nonce}})
+    strategy.expects(:fail!)
+    strategy.callback_phase
+  end
+
+  def test_callback_phase_with_socket_error
+    code = SecureRandom.hex(16)
+    state = SecureRandom.hex(16)
+    nonce = SecureRandom.hex(16)
+    request.stubs(:params).returns({'code' => code,'state' => state})
+    request.stubs(:path_info).returns('')
+
+    strategy.options.issuer = 'example.com'
+
+    strategy.stubs(:access_token).raises(::SocketError.new('error'))
+    strategy.call!({'rack.session' => {'omniauth.state' => state, 'omniauth.nonce' => nonce}})
+    strategy.expects(:fail!)
+    strategy.callback_phase
+  end
+
   def test_info
     info = strategy.info
     assert_equal user_info.name, info[:name]
