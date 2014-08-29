@@ -30,7 +30,7 @@ class OmniAuth::Strategies::OpenIDConnectTest < StrategyTestCase
     config.stubs(:token_endpoint).returns('https://example.com/token')
     config.stubs(:userinfo_endpoint).returns('https://example.com/userinfo')
     config.stubs(:jwks_uri).returns('https://example.com/jwks')
-    OpenIDConnect::Discovery::Provider::Config.stubs(:discover!).with('https://example.com/').returns(config)
+    ::OpenIDConnect::Discovery::Provider::Config.stubs(:discover!).with('https://example.com/').returns(config)
 
     strategy.expects(:redirect).with(regexp_matches(expected_redirect))
     strategy.request_phase
@@ -94,7 +94,7 @@ class OmniAuth::Strategies::OpenIDConnectTest < StrategyTestCase
     config.stubs(:userinfo_endpoint).returns('https://example.com/userinfo')
     config.stubs(:jwks_uri).returns('https://example.com/jwks')
     config.stubs(:public_keys).returns([public_key])
-    OpenIDConnect::Discovery::Provider::Config.stubs(:discover!).with('https://example.com/').returns(config)
+    ::OpenIDConnect::Discovery::Provider::Config.stubs(:discover!).with('https://example.com/').returns(config)
 
     id_token = stub('OpenIDConnect::ResponseObject::IdToken')
     id_token.stubs(:verify!).with({:issuer => 'https://example.com/', :client_id => @identifier, :nonce => nonce}).returns(true)
@@ -113,6 +113,29 @@ class OmniAuth::Strategies::OpenIDConnectTest < StrategyTestCase
     strategy.call!({'rack.session' => {'omniauth.state' => state, 'omniauth.nonce' => nonce}})
     strategy.callback_phase
 
+  end
+
+  def test_callback_phase_with_error
+    state = SecureRandom.hex(16)
+    nonce = SecureRandom.hex(16)
+    request.stubs(:params).returns({'error' => 'invalid_request'})
+    request.stubs(:path_info).returns('')
+
+    strategy.call!({'rack.session' => {'omniauth.state' => state, 'omniauth.nonce' => nonce}})
+    strategy.expects(:fail!)
+    strategy.callback_phase
+  end
+
+  def test_callback_phase_with_invalid_state
+    code = SecureRandom.hex(16)
+    state = SecureRandom.hex(16)
+    nonce = SecureRandom.hex(16)
+    request.stubs(:params).returns({'code' => code,'state' => 'foobar'})
+    request.stubs(:path_info).returns('')
+
+    strategy.call!({'rack.session' => {'omniauth.state' => state, 'omniauth.nonce' => nonce}})
+    strategy.expects(:fail!)
+    strategy.callback_phase
   end
 
   def test_info
