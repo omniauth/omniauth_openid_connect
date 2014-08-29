@@ -138,6 +138,105 @@ class OmniAuth::Strategies::OpenIDConnectTest < StrategyTestCase
     strategy.callback_phase
   end
 
+  def test_callback_phase_with_timeout
+    code = SecureRandom.hex(16)
+    state = SecureRandom.hex(16)
+    nonce = SecureRandom.hex(16)
+    public_key = OpenSSL::PKey::RSA.generate(2048).public_key
+    request.stubs(:params).returns({'code' => code,'state' => state})
+    request.stubs(:path_info).returns('')
+
+    strategy.options.client_options.host = 'example.com'
+    strategy.options.discovery = true
+
+    issuer = stub('OpenIDConnect::Discovery::Issuer')
+    issuer.stubs(:issuer).returns('https://example.com/')
+    ::OpenIDConnect::Discovery::Provider.stubs(:discover!).returns(issuer)
+
+    config = stub('OpenIDConnect::Discovery::Provder::Config')
+    config.stubs(:authorization_endpoint).returns('https://example.com/authorization')
+    config.stubs(:token_endpoint).returns('https://example.com/token')
+    config.stubs(:userinfo_endpoint).returns('https://example.com/userinfo')
+    config.stubs(:jwks_uri).returns('https://example.com/jwks')
+    config.stubs(:public_keys).returns([public_key])
+    ::OpenIDConnect::Discovery::Provider::Config.stubs(:discover!).with('https://example.com/').returns(config)
+
+    id_token = stub('OpenIDConnect::ResponseObject::IdToken')
+    id_token.stubs(:verify!).with({:issuer => 'https://example.com/', :client_id => @identifier, :nonce => nonce}).returns(true)
+    ::OpenIDConnect::ResponseObject::IdToken.stubs(:decode).returns(id_token)
+
+    strategy.stubs(:access_token).raises(::Timeout::Error.new('error'))
+    strategy.call!({'rack.session' => {'omniauth.state' => state, 'omniauth.nonce' => nonce}})
+    strategy.expects(:fail!)
+    strategy.callback_phase
+  end
+
+  def test_callback_phase_with_etimeout
+    code = SecureRandom.hex(16)
+    state = SecureRandom.hex(16)
+    nonce = SecureRandom.hex(16)
+    public_key = OpenSSL::PKey::RSA.generate(2048).public_key
+    request.stubs(:params).returns({'code' => code,'state' => state})
+    request.stubs(:path_info).returns('')
+
+    strategy.options.client_options.host = 'example.com'
+    strategy.options.discovery = true
+
+    issuer = stub('OpenIDConnect::Discovery::Issuer')
+    issuer.stubs(:issuer).returns('https://example.com/')
+    ::OpenIDConnect::Discovery::Provider.stubs(:discover!).returns(issuer)
+
+    config = stub('OpenIDConnect::Discovery::Provder::Config')
+    config.stubs(:authorization_endpoint).returns('https://example.com/authorization')
+    config.stubs(:token_endpoint).returns('https://example.com/token')
+    config.stubs(:userinfo_endpoint).returns('https://example.com/userinfo')
+    config.stubs(:jwks_uri).returns('https://example.com/jwks')
+    config.stubs(:public_keys).returns([public_key])
+    ::OpenIDConnect::Discovery::Provider::Config.stubs(:discover!).with('https://example.com/').returns(config)
+
+    id_token = stub('OpenIDConnect::ResponseObject::IdToken')
+    id_token.stubs(:verify!).with({:issuer => 'https://example.com/', :client_id => @identifier, :nonce => nonce}).returns(true)
+    ::OpenIDConnect::ResponseObject::IdToken.stubs(:decode).returns(id_token)
+
+    strategy.stubs(:access_token).raises(::Errno::ETIMEDOUT.new('error'))
+    strategy.call!({'rack.session' => {'omniauth.state' => state, 'omniauth.nonce' => nonce}})
+    strategy.expects(:fail!)
+    strategy.callback_phase
+  end
+
+  def test_callback_phase_with_socket_error
+    code = SecureRandom.hex(16)
+    state = SecureRandom.hex(16)
+    nonce = SecureRandom.hex(16)
+    public_key = OpenSSL::PKey::RSA.generate(2048).public_key
+    request.stubs(:params).returns({'code' => code,'state' => state})
+    request.stubs(:path_info).returns('')
+
+    strategy.options.client_options.host = 'example.com'
+    strategy.options.discovery = true
+
+    issuer = stub('OpenIDConnect::Discovery::Issuer')
+    issuer.stubs(:issuer).returns('https://example.com/')
+    ::OpenIDConnect::Discovery::Provider.stubs(:discover!).returns(issuer)
+
+    config = stub('OpenIDConnect::Discovery::Provder::Config')
+    config.stubs(:authorization_endpoint).returns('https://example.com/authorization')
+    config.stubs(:token_endpoint).returns('https://example.com/token')
+    config.stubs(:userinfo_endpoint).returns('https://example.com/userinfo')
+    config.stubs(:jwks_uri).returns('https://example.com/jwks')
+    config.stubs(:public_keys).returns([public_key])
+    ::OpenIDConnect::Discovery::Provider::Config.stubs(:discover!).with('https://example.com/').returns(config)
+
+    id_token = stub('OpenIDConnect::ResponseObject::IdToken')
+    id_token.stubs(:verify!).with({:issuer => 'https://example.com/', :client_id => @identifier, :nonce => nonce}).returns(true)
+    ::OpenIDConnect::ResponseObject::IdToken.stubs(:decode).returns(id_token)
+
+    strategy.stubs(:access_token).raises(::SocketError.new('error'))
+    strategy.call!({'rack.session' => {'omniauth.state' => state, 'omniauth.nonce' => nonce}})
+    strategy.expects(:fail!)
+    strategy.callback_phase
+  end
+
   def test_info
     info = strategy.info
     assert_equal user_info.name, info[:name]
