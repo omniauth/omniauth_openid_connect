@@ -23,7 +23,7 @@ module OmniAuth
           jwks_uri: '/jwk'
       }
       option :issuer
-      option :discover, false
+      option :discovery, false
       option :client_signing_alg
       option :client_jwk_signing_key
       option :client_x509_signing_key
@@ -61,6 +61,7 @@ module OmniAuth
 
       credentials do
         {
+            id_token: access_token.id_token,
             token: access_token.access_token,
             refresh_token: access_token.refresh_token,
             expires_in: access_token.expires_in,
@@ -78,7 +79,7 @@ module OmniAuth
 
       def request_phase
         options.issuer = issuer if options.issuer.blank?
-        discover! if options.discover
+        discover! if options.discovery
         redirect authorize_uri
       end
 
@@ -90,7 +91,7 @@ module OmniAuth
           raise CallbackError.new(:csrf_detected, 'CSRF detected')
         else
           options.issuer = issuer if options.issuer.blank?
-          discover! if options.discover
+          discover! if options.discovery
           client.redirect_uri = client_options.redirect_uri
           client.authorization_code = authorization_code
           access_token
@@ -117,6 +118,14 @@ module OmniAuth
             state: new_state,
             nonce: new_nonce,
         )
+      end
+
+      def public_key
+        if options.discover
+          config.public_keys.first
+        else
+          key_or_secret
+        end
       end
 
       private
@@ -179,18 +188,10 @@ module OmniAuth
         @env.nil? ? {} : super
       end
 
-      def public_key
-        if options.discover
-          config.public_keys.first
-        else
-          key_or_secret
-        end
-      end
-
       def key_or_secret
         case options.client_signing_alg
           when :HS256, :HS384, :HS512
-            return options.client_secret
+            return client_options.secret
           when :RS256, :RS384, :RS512
             if options.client_jwk_signing_key
               return parse_jwk_key(options.client_jwk_signing_key)
