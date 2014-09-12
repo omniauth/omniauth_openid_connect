@@ -71,4 +71,13 @@ class OmniAuth::Strategies::OpenIDConnectTest < StrategyTestCase
                    scope: access_token.scope
                  }, strategy.credentials)
   end
+
+  def test_option_send_nonce
+    strategy.options.client_options[:host] = "foobar.com"
+
+    assert(strategy.authorize_uri =~ /nonce=/, "URI must contain nonce")
+
+    strategy.options.send_nonce = false
+    assert(!(strategy.authorize_uri =~ /nonce=/), "URI must not contain nonce")
+  end
 end
