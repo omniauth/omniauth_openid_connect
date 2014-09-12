@@ -70,6 +70,10 @@ module OmniAuth
       end
 
       def callback_phase
+        if !request.params["code"]
+          return fail!(:missing_code, OmniAuth::OpenIDConnect::MissingCodeError.new(request.params["error"]))
+        end
+
         client.redirect_uri = client_options.redirect_uri
         client.authorization_code = authorization_code
         access_token
