@@ -252,6 +252,7 @@ class OmniAuth::Strategies::OpenIDConnectTest < StrategyTestCase
     session = { "state" => 42 }
 
     expected_redirect = /&state=/
+    strategy.options.issuer = 'example.com'
     strategy.options.client_options.host = "example.com"
     strategy.expects(:redirect).with(regexp_matches(expected_redirect))
     strategy.request_phase
