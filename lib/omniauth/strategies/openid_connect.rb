@@ -38,6 +38,8 @@ module OmniAuth
       option :id_token_hint
       option :login_hint
       option :acr_values
+      option :send_nonce, true
+      option :client_auth_method
 
       uid { user_info.sub }
 
@@ -89,6 +91,8 @@ module OmniAuth
           raise CallbackError.new(request.params['error'], request.params['error_description'] || request.params['error_reason'], request.params['error_uri'])
         elsif request.params['state'].to_s.empty? || request.params['state'] != stored_state
           raise CallbackError.new(:csrf_detected, 'CSRF detected')
+        elsif !request.params["code"]
+          return fail!(:missing_code, OmniAuth::OpenIDConnect::MissingCodeError.new(request.params["error"]))
         else
           options.issuer = issuer if options.issuer.blank?
           discover! if options.discovery
@@ -112,12 +116,13 @@ module OmniAuth
 
       def authorize_uri
         client.redirect_uri = client_options.redirect_uri
-        client.authorization_uri(
+        opts = {
             response_type: options.response_type,
             scope: options.scope,
             state: new_state,
             nonce: new_nonce,
-        )
+        }
+        client.authorization_uri(opts.reject{|k,v| v.nil?})
       end
 
       def public_key
@@ -148,7 +153,10 @@ module OmniAuth
 
       def access_token
         @access_token ||= lambda {
-          _access_token = client.access_token!
+          _access_token = client.access_token!(
+          scope: options.scope,
+          client_auth_method: options.client_auth_method
+          )
           _id_token = decode_id_token _access_token.id_token
           _id_token.verify!(
               issuer: options.issuer,
@@ -169,7 +177,8 @@ module OmniAuth
       end
 
       def new_state
-        session['omniauth.state'] = SecureRandom.hex(16)
+        state = options.state.call if options.state.respond_to? :call
+        session['omniauth.state'] = state || SecureRandom.hex(16)
       end
 
       def stored_state
