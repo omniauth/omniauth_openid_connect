@@ -134,8 +134,10 @@ class OmniAuth::Strategies::OpenIDConnectTest < StrategyTestCase
     request.stubs(:path_info).returns('')
 
     strategy.call!({'rack.session' => {'omniauth.state' => state, 'omniauth.nonce' => nonce}})
-    strategy.expects(:fail!)
-    strategy.callback_phase
+    result = strategy.callback_phase
+
+    assert result.kind_of?(Array)
+    assert result.first == 401, "Expecting unauthorized"
   end
 
   def test_callback_phase_with_timeout

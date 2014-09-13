@@ -90,7 +90,7 @@ module OmniAuth
         if error
           raise CallbackError.new(request.params['error'], request.params['error_description'] || request.params['error_reason'], request.params['error_uri'])
         elsif request.params['state'].to_s.empty? || request.params['state'] != stored_state
-          raise CallbackError.new(:csrf_detected, 'CSRF detected')
+          return Rack::Response.new(['401 Unauthorized'], 401).finish
         elsif !request.params["code"]
           return fail!(:missing_code, OmniAuth::OpenIDConnect::MissingCodeError.new(request.params["error"]))
         else
