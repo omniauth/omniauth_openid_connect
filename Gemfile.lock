@@ -1,4 +1,4 @@
-  PATH
+PATH
   remote: .
   specs:
     omniauth-openid-connect (0.2.0)
