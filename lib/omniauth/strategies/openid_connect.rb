@@ -11,16 +11,16 @@ module OmniAuth
       include OmniAuth::Strategy
 
       option :client_options, {
-          identifier: nil,
-          secret: nil,
-          redirect_uri: nil,
-          scheme: "https",
-          host: nil,
-          port: 443,
-          authorization_endpoint: "/authorize",
-          token_endpoint: "/token",
-          userinfo_endpoint: "/userinfo",
-          jwks_uri: '/jwk'
+        identifier: nil,
+        secret: nil,
+        redirect_uri: nil,
+        scheme: "https",
+        host: nil,
+        port: 443,
+        authorization_endpoint: "/authorize",
+        token_endpoint: "/token",
+        userinfo_endpoint: "/userinfo",
+        jwks_uri: '/jwk'
       }
       option :issuer
       option :discovery, false
@@ -43,15 +43,15 @@ module OmniAuth
 
       info do
         {
-            name: user_info.name,
-            email: user_info.email,
-            nickname: user_info.preferred_username,
-            first_name: user_info.given_name,
-            last_name: user_info.family_name,
-            gender: user_info.gender,
-            image: user_info.picture,
-            phone: user_info.phone_number,
-            urls: {website: user_info.website}
+          name: user_info.name,
+          email: user_info.email,
+          nickname: user_info.preferred_username,
+          first_name: user_info.given_name,
+          last_name: user_info.family_name,
+          gender: user_info.gender,
+          image: user_info.picture,
+          phone: user_info.phone_number,
+          urls: { website: user_info.website }
         }
       end
 
