@@ -19,9 +19,9 @@ class OmniAuth::Strategies::OpenIDConnectTest < StrategyTestCase
     assert_equal user_info.sub, strategy.uid
   end
 
-  def test_callback_phase
+  def test_callback_phase(session = {}, params = {})
     code = SecureRandom.hex(16)
-    request.stubs(:params).returns({"code" => code})
+    request.stubs(:params).returns({"code" => code}.merge(params))
     request.stubs(:path_info).returns("")
 
     strategy.unstub(:user_info)
@@ -33,7 +33,7 @@ class OmniAuth::Strategies::OpenIDConnectTest < StrategyTestCase
     client.expects(:access_token!).returns(access_token)
     access_token.expects(:userinfo!).returns(user_info)
 
-    strategy.call!({"rack.session" => {}})
+    strategy.call!({"rack.session" => session})
     strategy.callback_phase
   end
 
@@ -91,5 +91,29 @@ class OmniAuth::Strategies::OpenIDConnectTest < StrategyTestCase
     assert(result.is_a? Array)
     assert(result[0] == 302, "Redirect")
     assert(result[1]["Location"] =~ /\/auth\/failure/)
+  end
+
+  def test_state
+    strategy.options.state = lambda { 42 }
+    session = { "state" => 42 }
+
+    expected_redirect = /&state=/
+    strategy.options.client_options.host = "example.com"
+    strategy.expects(:redirect).with(regexp_matches(expected_redirect))
+    strategy.request_phase
+
+    # this should succeed as the correct state is passed with the request
+    test_callback_phase(session, { "state" => 42 })
+
+    # the following should fail because the wrong state is passed to the callback
+    code = SecureRandom.hex(16)
+    request.stubs(:params).returns({"code" => code, "state" => 43})
+    request.stubs(:path_info).returns("")
+    strategy.call!({"rack.session" => session})
+
+    result = strategy.callback_phase
+
+    assert result.kind_of?(Array)
+    assert result.first == 401, "Expecting unauthorized"
   end
 end
