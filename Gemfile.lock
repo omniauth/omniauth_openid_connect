@@ -1,7 +1,7 @@
 PATH
   remote: .
   specs:
-    omniauth-openid-connect (0.1.0)
+    omniauth-openid-connect (0.2.0)
       activesupport (~> 4.1.6)
       addressable (~> 2.3)
       omniauth (~> 1.1)
