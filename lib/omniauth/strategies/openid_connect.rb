@@ -70,8 +70,11 @@ module OmniAuth
       end
 
       def callback_phase
-        if !request.params["code"]
+        case
+        when !request.params["code"]
           return fail!(:missing_code, OmniAuth::OpenIDConnect::MissingCodeError.new(request.params["error"]))
+        when !session["state"].nil? && session["state"] != request.params["state"]
+          return Rack::Response.new(['401 Unauthorized'], 401).finish
         end
 
         client.redirect_uri = client_options.redirect_uri
@@ -90,8 +93,10 @@ module OmniAuth
           response_type: options.response_type,
           scope: options.scope,
           nonce: (nonce if options.send_nonce),
+          state: (session["state"] = options.state.call if options.state.respond_to? :call),
         }
-        client.authorization_uri(opts.reject { |k, v| v.nil? })
+
+        client.authorization_uri(opts.reject{|k,v| v.nil?})
       end
 
       private
