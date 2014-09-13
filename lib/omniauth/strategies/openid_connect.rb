@@ -120,7 +120,7 @@ module OmniAuth
             response_type: options.response_type,
             scope: options.scope,
             state: new_state,
-            nonce: new_nonce,
+            nonce: (new_nonce if options.send_nonce),
         }
         client.authorization_uri(opts.reject{|k,v| v.nil?})
       end
