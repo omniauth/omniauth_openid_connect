@@ -275,18 +275,33 @@ class OmniAuth::Strategies::OpenIDConnectTest < StrategyTestCase
   end
 
   def test_option_client_auth_method
+    code = SecureRandom.hex(16)
+    state = SecureRandom.hex(16)
+    nonce = SecureRandom.hex(16)
+
     opts = strategy.options.client_options
     opts[:host] = "foobar.com"
+    strategy.options.issuer = "foobar.com"
     strategy.options.client_auth_method = :not_basic
-    json_response = {id_token: nil}.to_json
+
+    json_response = {access_token: 'test_access_token',
+                     id_token: 'id_token',
+                     token_type: 'Bearer',
+                    }.to_json
     success = Struct.new(:status, :body).new(200, json_response)
+
+    request.stubs(:path_info).returns('')
+    strategy.call!({'rack.session' => {'omniauth.state' => state, 'omniauth.nonce' => nonce}})
+
+    id_token = stub('OpenIDConnect::ResponseObject::IdToken')
+    id_token.stubs(:verify!).with({:issuer => strategy.options.issuer, :client_id => @identifier, :nonce => nonce}).returns(true)
+    ::OpenIDConnect::ResponseObject::IdToken.stubs(:decode).returns(id_token)
 
     HTTPClient.any_instance.stubs(:post).with(
       "#{opts.scheme}://#{opts.host}:#{opts.port}#{opts.token_endpoint}",
       {scope: 'openid', :grant_type => :client_credentials, :client_id => @identifier, :client_secret => @secret},
       {}
     ).returns(success)
-    #OpenIDConnect::Client.any_instance.stubs(:handle_success_response).with(success).returns(true)
 
     assert(strategy.send :access_token)
   end
