@@ -31,6 +31,7 @@ module OmniAuth
       option :login_hint
       option :acr_values
       option :send_nonce, true
+      option :client_auth_method
 
       uid { user_info.sub }
 
@@ -106,7 +107,10 @@ module OmniAuth
       end
 
       def access_token
-        @access_token ||= client.access_token!(scope: options.scope)
+        @access_token ||= client.access_token!(
+          scope: options.scope,
+          client_auth_method: options.client_auth_method
+        )
       end
 
       def client_options
