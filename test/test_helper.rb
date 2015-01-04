@@ -8,6 +8,7 @@ Coveralls.wear!
 require 'minitest/autorun'
 require 'mocha/mini_test'
 require 'faker'
+require 'active_support'
 require_relative '../lib/omniauth-openid-connect'
 
 OmniAuth.config.test_mode = true
