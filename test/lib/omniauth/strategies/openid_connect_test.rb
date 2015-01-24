@@ -315,7 +315,7 @@ class OmniAuth::Strategies::OpenIDConnectTest < StrategyTestCase
   def test_public_key_with_x509
     strategy.options.client_signing_alg = :RS256
     strategy.options.client_x509_signing_key = File.read('./test/fixtures/test.crt')
-    assert_equal OpenSSL::X509::Certificate, strategy.public_key.class
+    assert_equal OpenSSL::PKey::RSA, strategy.public_key.class
   end
 
   def test_public_key_with_hmac

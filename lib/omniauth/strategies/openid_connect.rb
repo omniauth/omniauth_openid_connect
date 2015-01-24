@@ -212,7 +212,7 @@ module OmniAuth
       end
 
       def parse_x509_key(key)
-        OpenSSL::X509::Certificate.new key
+        OpenSSL::X509::Certificate.new(key).public_key
       end
 
       def parse_jwk_key(key)
