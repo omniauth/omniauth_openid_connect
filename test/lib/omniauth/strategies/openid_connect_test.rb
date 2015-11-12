@@ -54,6 +54,8 @@ class OmniAuth::Strategies::OpenIDConnectTest < StrategyTestCase
     request.stubs(:path_info).returns('')
 
     strategy.options.issuer = 'example.com'
+    strategy.options.client_signing_alg = :RS256
+    strategy.options.client_jwk_signing_key = File.read('test/fixtures/jwks.json')
 
     id_token = stub('OpenIDConnect::ResponseObject::IdToken')
     id_token.stubs(:verify!).with({:issuer => strategy.options.issuer, :client_id => @identifier, :nonce => nonce}).returns(true)
@@ -65,7 +67,7 @@ class OmniAuth::Strategies::OpenIDConnectTest < StrategyTestCase
     access_token.stubs(:refresh_token)
     access_token.stubs(:expires_in)
     access_token.stubs(:scope)
-    access_token.stubs(:id_token).returns('id_token')
+    access_token.stubs(:id_token).returns(File.read('test/fixtures/id_token.txt'))
     client.expects(:access_token!).at_least_once.returns(access_token)
     access_token.expects(:userinfo!).returns(user_info)
 
@@ -77,7 +79,8 @@ class OmniAuth::Strategies::OpenIDConnectTest < StrategyTestCase
     code = SecureRandom.hex(16)
     state = SecureRandom.hex(16)
     nonce = SecureRandom.hex(16)
-    public_key = OpenSSL::PKey::RSA.generate(2048).public_key
+    jwks = JSON::JWK::Set.new(JSON.parse(File.read('test/fixtures/jwks.json'))['keys'])
+
     request.stubs(:params).returns({'code' => code,'state' => state})
     request.stubs(:path_info).returns('')
 
@@ -93,7 +96,8 @@ class OmniAuth::Strategies::OpenIDConnectTest < StrategyTestCase
     config.stubs(:token_endpoint).returns('https://example.com/token')
     config.stubs(:userinfo_endpoint).returns('https://example.com/userinfo')
     config.stubs(:jwks_uri).returns('https://example.com/jwks')
-    config.stubs(:public_keys).returns([public_key])
+    config.stubs(:jwks).returns(jwks)
+
     ::OpenIDConnect::Discovery::Provider::Config.stubs(:discover!).with('https://example.com/').returns(config)
 
     id_token = stub('OpenIDConnect::ResponseObject::IdToken')
@@ -106,13 +110,12 @@ class OmniAuth::Strategies::OpenIDConnectTest < StrategyTestCase
     access_token.stubs(:refresh_token)
     access_token.stubs(:expires_in)
     access_token.stubs(:scope)
-    access_token.stubs(:id_token).returns('id_token')
+    access_token.stubs(:id_token).returns(File.read('test/fixtures/id_token.txt'))
     client.expects(:access_token!).at_least_once.returns(access_token)
     access_token.expects(:userinfo!).returns(user_info)
 
     strategy.call!({'rack.session' => {'omniauth.state' => state, 'omniauth.nonce' => nonce}})
     strategy.callback_phase
-
   end
 
   def test_callback_phase_with_error
@@ -204,6 +207,8 @@ class OmniAuth::Strategies::OpenIDConnectTest < StrategyTestCase
 
   def test_credentials
     strategy.options.issuer = 'example.com'
+    strategy.options.client_signing_alg = :RS256
+    strategy.options.client_jwk_signing_key = File.read('test/fixtures/jwks.json')
 
     id_token = stub('OpenIDConnect::ResponseObject::IdToken')
     id_token.stubs(:verify!).returns(true)
@@ -214,7 +219,7 @@ class OmniAuth::Strategies::OpenIDConnectTest < StrategyTestCase
     access_token.stubs(:refresh_token).returns(SecureRandom.hex(16))
     access_token.stubs(:expires_in).returns(Time.now)
     access_token.stubs(:scope).returns('openidconnect')
-    access_token.stubs(:id_token).returns(id_token)
+    access_token.stubs(:id_token).returns(File.read('test/fixtures/id_token.txt'))
 
     client.expects(:access_token!).returns(access_token)
     access_token.expects(:refresh_token).returns(access_token.refresh_token)
@@ -283,11 +288,13 @@ class OmniAuth::Strategies::OpenIDConnectTest < StrategyTestCase
     opts[:host] = "foobar.com"
     strategy.options.issuer = "foobar.com"
     strategy.options.client_auth_method = :not_basic
+    strategy.options.client_signing_alg = :RS256
+    strategy.options.client_jwk_signing_key = File.read('test/fixtures/jwks.json')
 
     json_response = {access_token: 'test_access_token',
-                     id_token: 'id_token',
+                     id_token: File.read('test/fixtures/id_token.txt'),
                      token_type: 'Bearer',
-                    }.to_json
+    }.to_json
     success = Struct.new(:status, :body).new(200, json_response)
 
     request.stubs(:path_info).returns('')
@@ -309,7 +316,8 @@ class OmniAuth::Strategies::OpenIDConnectTest < StrategyTestCase
   def test_public_key_with_jwk
     strategy.options.client_signing_alg = :RS256
     strategy.options.client_jwk_signing_key = File.read('./test/fixtures/jwks.json')
-    assert_equal OpenSSL::PKey::RSA, strategy.public_key.class
+
+    assert_equal JSON::JWK::Set, strategy.public_key.class
   end
 
   def test_public_key_with_x509

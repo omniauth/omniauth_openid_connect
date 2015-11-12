@@ -127,7 +127,7 @@ module OmniAuth
 
       def public_key
         if options.discovery
-          config.public_keys.first
+          config.jwks
         else
           key_or_secret
         end
@@ -168,7 +168,22 @@ module OmniAuth
       end
 
       def decode_id_token(id_token)
-        ::OpenIDConnect::ResponseObject::IdToken.decode(id_token, public_key)
+        header = JSON.parse(UrlSafeBase64.decode64(id_token.split('.').first))
+        if header.has_key?('kid')
+          keys = public_key.inject({}) do |keys, jwk|
+            key = JSON::JWK.new(jwk)
+            keys.merge! jwk['kid'] => key.to_key.public_key
+          end
+          ::OpenIDConnect::ResponseObject::IdToken.decode(id_token, keys[header[:kid]])
+        else
+          case public_key.class
+            when JSON::JWK::Set
+              jwk = JSON::JWK.new(public_key.first)
+              ::OpenIDConnect::ResponseObject::IdToken.decode(id_token, jwk.to_key)
+            else
+              ::OpenIDConnect::ResponseObject::IdToken.decode(id_token, public_key)
+          end
+        end
       end
 
 
@@ -217,17 +232,7 @@ module OmniAuth
 
       def parse_jwk_key(key)
         json = JSON.parse(key)
-        jwk = json['keys'].first
-        create_rsa_key(jwk['n'], jwk['e'])
-      end
-
-      def create_rsa_key(mod, exp)
-        key = OpenSSL::PKey::RSA.new
-        exponent = OpenSSL::BN.new decode(exp)
-        modulus = OpenSSL::BN.new decode(mod)
-        key.e = exponent
-        key.n = modulus
-        key
+        JSON::JWK::Set.new json['keys']
       end
 
       def decode(str)

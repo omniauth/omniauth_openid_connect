@@ -30,7 +30,7 @@ class StrategyTestCase < MiniTest::Test
   end
 
   def user_info
-    @user_info ||= OpenIDConnect::ResponseObject::UserInfo::OpenID.new(
+    @user_info ||= OpenIDConnect::ResponseObject::UserInfo.new(
       sub: SecureRandom.hex(16),
       name: Faker::Name.name,
       email: Faker::Internet.email,
