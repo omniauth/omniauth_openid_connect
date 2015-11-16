@@ -168,22 +168,7 @@ module OmniAuth
       end
 
       def decode_id_token(id_token)
-        header = JSON.parse(UrlSafeBase64.decode64(id_token.split('.').first))
-        if header.has_key?('kid')
-          keys = public_key.inject({}) do |keys, jwk|
-            key = JSON::JWK.new(jwk)
-            keys.merge! jwk['kid'] => key.to_key.public_key
-          end
-          ::OpenIDConnect::ResponseObject::IdToken.decode(id_token, keys[header[:kid]])
-        else
-          case public_key.class
-            when JSON::JWK::Set
-              jwk = JSON::JWK.new(public_key.first)
-              ::OpenIDConnect::ResponseObject::IdToken.decode(id_token, jwk.to_key)
-            else
-              ::OpenIDConnect::ResponseObject::IdToken.decode(id_token, public_key)
-          end
-        end
+        ::OpenIDConnect::ResponseObject::IdToken.decode(id_token, public_key)
       end
 
 
@@ -232,7 +217,11 @@ module OmniAuth
 
       def parse_jwk_key(key)
         json = JSON.parse(key)
-        JSON::JWK::Set.new json['keys']
+        if json.has_key?('keys')
+          JSON::JWK::Set.new json['keys']
+        else
+          JSON::JWK.new json
+        end
       end
 
       def decode(str)
