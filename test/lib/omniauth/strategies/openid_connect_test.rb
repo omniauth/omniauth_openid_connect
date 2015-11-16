@@ -313,11 +313,21 @@ class OmniAuth::Strategies::OpenIDConnectTest < StrategyTestCase
     assert(strategy.send :access_token)
   end
 
-  def test_public_key_with_jwk
+  def test_public_key_with_jwks
     strategy.options.client_signing_alg = :RS256
     strategy.options.client_jwk_signing_key = File.read('./test/fixtures/jwks.json')
 
     assert_equal JSON::JWK::Set, strategy.public_key.class
+  end
+
+  def test_public_key_with_jwk
+    strategy.options.client_signing_alg = :RS256
+    jwks_str = File.read('./test/fixtures/jwks.json')
+    jwks = JSON.parse(jwks_str)
+    jwk = jwks['keys'].first
+    strategy.options.client_jwk_signing_key = jwk.to_json
+
+    assert_equal JSON::JWK, strategy.public_key.class
   end
 
   def test_public_key_with_x509
