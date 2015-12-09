@@ -33,6 +33,7 @@ module OmniAuth
       option :response_mode
       option :display, nil #, [:page, :popup, :touch, :wap]
       option :prompt, nil #, [:none, :login, :consent, :select_account]
+      option :hd, nil
       option :max_age
       option :ui_locales
       option :id_token_hint
@@ -121,6 +122,7 @@ module OmniAuth
             scope: options.scope,
             state: new_state,
             nonce: (new_nonce if options.send_nonce),
+            hd: options.hd,
         }
         client.authorization_uri(opts.reject{|k,v| v.nil?})
       end
