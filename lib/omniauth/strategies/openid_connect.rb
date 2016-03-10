@@ -40,6 +40,7 @@ module OmniAuth
       option :login_hint
       option :acr_values
       option :send_nonce, true
+      option :send_scope_to_token_endpoint, true
       option :client_auth_method
 
       uid { user_info.sub }
@@ -156,7 +157,7 @@ module OmniAuth
       def access_token
         @access_token ||= lambda {
           _access_token = client.access_token!(
-          scope: options.scope,
+          scope: (options.scope if options.send_scope_to_token_endpoint),
           client_auth_method: options.client_auth_method
           )
           _id_token = decode_id_token _access_token.id_token
