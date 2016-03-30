@@ -56,7 +56,7 @@ Configuration details:
   * Use "OpenID Connect Discovery", You should specify `true` to `discovery` option. (default false)
   * In "OpenID Connect Discovery", generally provider should have Webfinger endpoint.
   If provider does not have Webfinger endpoint, You can specify "Issuer" to option.  
-  e.g. `issuer: "myprovider.com"`  
+  e.g. `issuer: "https://myprovider.com"`  
   It means to get configuration from "https://myprovider.com/.well-known/openid-configuration".
 
 For the full low down on OpenID Connect, please check out
