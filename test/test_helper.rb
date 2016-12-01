@@ -1,16 +1,17 @@
+lib = File.expand_path('../../lib', __FILE__)
+$LOAD_PATH.unshift(lib) unless $LOAD_PATH.include?(lib)
+
 require 'simplecov'
-SimpleCov.command_name 'test'
-SimpleCov.start
-
 require 'coveralls'
-Coveralls.wear!
-
 require 'minitest/autorun'
 require 'mocha/mini_test'
 require 'faker'
 require 'active_support'
-require_relative '../lib/omniauth-openid-connect'
+require 'omniauth-openid-connect'
 
+SimpleCov.command_name 'test'
+SimpleCov.start
+Coveralls.wear!
 OmniAuth.config.test_mode = true
 
 class StrategyTestCase < MiniTest::Test
