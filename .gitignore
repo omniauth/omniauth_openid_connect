@@ -15,3 +15,5 @@ test/tmp
 test/version_tmp
 tmp
 .ruby-version
+.ruby-gemset
+Gemfile.lock
