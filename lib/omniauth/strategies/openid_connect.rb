@@ -98,7 +98,7 @@ module OmniAuth
         else
           options.issuer = issuer if options.issuer.blank?
           discover! if options.discovery
-          client.redirect_uri = client_options.redirect_uri
+          client.redirect_uri = redirect_uri
           client.authorization_code = authorization_code
           access_token
           super
@@ -117,7 +117,7 @@ module OmniAuth
       end
 
       def authorize_uri
-        client.redirect_uri = client_options.redirect_uri
+        client.redirect_uri = redirect_uri
         opts = {
             response_type: options.response_type,
             scope: options.scope,
@@ -229,6 +229,11 @@ module OmniAuth
 
       def decode(str)
         UrlSafeBase64.decode64(str).unpack('B*').first.to_i(2).to_s
+      end
+
+      def redirect_uri
+        return client_options.redirect_uri unless request.params['redirect_uri']
+        "#{ client_options.redirect_uri }?redirect_uri=#{ CGI.escape(request.params['redirect_uri']) }"
       end
 
       class CallbackError < StandardError
