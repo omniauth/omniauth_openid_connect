@@ -1,16 +1,14 @@
 # OmniAuth::OpenIDConnect
 
-OpenID Connect strategy for OmniAuth
-[![Gem Version](https://badge.fury.io/rb/omniauth-openid-connect.png)](http://badge.fury.io/rb/omniauth-openid-connect)
-[![Build Status](https://travis-ci.org/jjbohn/omniauth-openid-connect.png?branch=master)](https://travis-ci.org/jjbohn/omniauth-openid-connect)
-[![Coverage Status](https://coveralls.io/repos/jjbohn/omniauth-openid-connect/badge.png?branch=master)](https://coveralls.io/r/jjbohn/omniauth-openid-connect?branch=master)
-[![Code Climate](https://codeclimate.com/github/jjbohn/omniauth-openid-connect.png)](https://codeclimate.com/github/jjbohn/omniauth-openid-connect)
+Originally was [omniauth-openid-connect](https://github.com/jjbohn/omniauth-openid-connect)
+
+I've forked this repository and launch as separate gem because maintaining of original was dropped.
 
 ## Installation
 
 Add this line to your application's Gemfile:
 
-    gem 'omniauth-openid-connect'
+    gem 'omniauth_openid_connect'
 
 And then execute:
 
@@ -18,7 +16,7 @@ And then execute:
 
 Or install it yourself as:
 
-    $ gem install omniauth-openid-connect
+    $ gem install omniauth_openid_connect
 
 ## Usage
 
