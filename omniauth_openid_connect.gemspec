@@ -4,7 +4,7 @@ $LOAD_PATH.unshift(lib) unless $LOAD_PATH.include?(lib)
 require 'omniauth/openid_connect/version'
 
 Gem::Specification.new do |spec|
-  spec.name          = 'omniauth-openid-connect'
+  spec.name          = 'omniauth_openid_connect'
   spec.version       = OmniAuth::OpenIDConnect::VERSION
   spec.authors       = 'John Bohn'
   spec.email         = 'jjbohn@gmail.com'

@@ -14,12 +14,12 @@ module OmniAuth
         identifier: nil,
         secret: nil,
         redirect_uri: nil,
-        scheme: "https",
+        scheme: 'https',
         host: nil,
         port: 443,
-        authorization_endpoint: "/authorize",
-        token_endpoint: "/token",
-        userinfo_endpoint: "/userinfo",
+        authorization_endpoint: '/authorize',
+        token_endpoint: '/token',
+        userinfo_endpoint: '/userinfo',
         jwks_uri: '/jwk'
       }
       option :issuer
