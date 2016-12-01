@@ -60,16 +60,16 @@ module OmniAuth
       end
 
       extra do
-        {raw_info: user_info.raw_attributes}
+        { raw_info: user_info.raw_attributes }
       end
 
       credentials do
         {
-            id_token: access_token.id_token,
-            token: access_token.access_token,
-            refresh_token: access_token.refresh_token,
-            expires_in: access_token.expires_in,
-            scope: access_token.scope
+          id_token: access_token.id_token,
+          token: access_token.access_token,
+          refresh_token: access_token.refresh_token,
+          expires_in: access_token.expires_in,
+          scope: access_token.scope
         }
       end
 
@@ -93,8 +93,8 @@ module OmniAuth
           raise CallbackError.new(request.params['error'], request.params['error_description'] || request.params['error_reason'], request.params['error_uri'])
         elsif request.params['state'].to_s.empty? || request.params['state'] != stored_state
           return Rack::Response.new(['401 Unauthorized'], 401).finish
-        elsif !request.params["code"]
-          return fail!(:missing_code, OmniAuth::OpenIDConnect::MissingCodeError.new(request.params["error"]))
+        elsif !request.params['code']
+          return fail!(:missing_code, OmniAuth::OpenIDConnect::MissingCodeError.new(request.params['error']))
         else
           options.issuer = issuer if options.issuer.blank?
           discover! if options.discovery
@@ -111,35 +111,32 @@ module OmniAuth
         fail!(:failed_to_connect, e)
       end
 
-
       def authorization_code
-        request.params["code"]
+        request.params['code']
       end
 
       def authorize_uri
         client.redirect_uri = redirect_uri
         opts = {
-            response_type: options.response_type,
-            scope: options.scope,
-            state: new_state,
-            nonce: (new_nonce if options.send_nonce),
-            hd: options.hd,
+          response_type: options.response_type,
+          scope: options.scope,
+          state: new_state,
+          nonce: (new_nonce if options.send_nonce),
+          hd: options.hd,
         }
-        client.authorization_uri(opts.reject{|k,v| v.nil?})
+        client.authorization_uri(opts.reject { |k, v| v.nil? })
       end
 
       def public_key
-        if options.discovery
-          config.jwks
-        else
-          key_or_secret
-        end
+        return config.jwks if options.discovery
+        key_or_secret
       end
 
       private
 
       def issuer
-        resource = "#{client_options.scheme}://#{client_options.host}" + ((client_options.port) ? ":#{client_options.port.to_s}" : '')
+        resource = "#{ client_options.scheme }://#{ client_options.host }"
+        resource = "#{ resource }:#{ client_options.port }" if client_options.port
         ::OpenIDConnect::Discovery::Provider.discover!(resource).issuer
       end
 
@@ -155,25 +152,24 @@ module OmniAuth
       end
 
       def access_token
-        @access_token ||= lambda {
+        @access_token ||= begin
           _access_token = client.access_token!(
-          scope: (options.scope if options.send_scope_to_token_endpoint),
-          client_auth_method: options.client_auth_method
+            scope: (options.scope if options.send_scope_to_token_endpoint),
+            client_auth_method: options.client_auth_method
           )
           _id_token = decode_id_token _access_token.id_token
           _id_token.verify!(
-              issuer: options.issuer,
-              client_id: client_options.identifier,
-              nonce: stored_nonce
+            issuer: options.issuer,
+            client_id: client_options.identifier,
+            nonce: stored_nonce
           )
           _access_token
-        }.call()
+        end
       end
 
       def decode_id_token(id_token)
         ::OpenIDConnect::ResponseObject::IdToken.decode(id_token, public_key)
       end
-
 
       def client_options
         options.client_options
@@ -197,7 +193,8 @@ module OmniAuth
       end
 
       def session
-        @env.nil? ? {} : super
+        return {} if @env.nil?
+        super
       end
 
       def key_or_secret
