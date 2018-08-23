@@ -20,7 +20,8 @@ module OmniAuth
         authorization_endpoint: '/authorize',
         token_endpoint: '/token',
         userinfo_endpoint: '/userinfo',
-        jwks_uri: '/jwk'
+        jwks_uri: '/jwk',
+        end_session_endpoint: nil
       }
       option :issuer
       option :discovery, false
@@ -42,6 +43,7 @@ module OmniAuth
       option :send_nonce, true
       option :send_scope_to_token_endpoint, true
       option :client_auth_method
+      option :post_logout_redirect_uri
 
       uid { user_info.sub }
 
@@ -82,8 +84,7 @@ module OmniAuth
       end
 
       def request_phase
-        options.issuer = issuer if options.issuer.blank?
-        discover! if options.discovery
+        discover!
         redirect authorize_uri
       end
 
@@ -96,8 +97,7 @@ module OmniAuth
         elsif !request.params['code']
           return fail!(:missing_code, OmniAuth::OpenIDConnect::MissingCodeError.new(request.params['error']))
         else
-          options.issuer = issuer if options.issuer.blank?
-          discover! if options.discovery
+          discover!
           client.redirect_uri = redirect_uri
           client.authorization_code = authorization_code
           access_token
@@ -111,8 +111,24 @@ module OmniAuth
         fail!(:failed_to_connect, e)
       end
 
+      def other_phase
+        discover!
+        if logout_path_pattern.match(current_path) && end_session_uri
+          redirect end_session_uri
+        else
+          call_app!
+        end
+      end
+
       def authorization_code
         request.params['code']
+      end
+
+      def end_session_uri
+        return unless end_session_endpoint_is_valid?
+        end_session_uri = URI(client_options.end_session_endpoint)
+        end_session_uri.query = encoded_post_logout_redirect_uri
+        end_session_uri.to_s
       end
 
       def authorize_uri
@@ -143,10 +159,17 @@ module OmniAuth
       end
 
       def discover!
-        client_options.authorization_endpoint = config.authorization_endpoint
-        client_options.token_endpoint = config.token_endpoint
-        client_options.userinfo_endpoint = config.userinfo_endpoint
-        client_options.jwks_uri = config.jwks_uri
+        return unless options.discovery
+        options.issuer = issuer if options.issuer.blank?
+        setup_client_options(config)
+      end
+
+      def setup_client_options(discover)
+        client_options.authorization_endpoint = discover.authorization_endpoint
+        client_options.token_endpoint = discover.token_endpoint
+        client_options.userinfo_endpoint = discover.userinfo_endpoint
+        client_options.jwks_uri = discover.jwks_uri
+        client_options.end_session_endpoint = discover.try :end_session_endpoint
       end
 
       def user_info
@@ -233,6 +256,22 @@ module OmniAuth
       def redirect_uri
         return client_options.redirect_uri unless request.params['redirect_uri']
         "#{ client_options.redirect_uri }?redirect_uri=#{ CGI.escape(request.params['redirect_uri']) }"
+      end
+
+      def encoded_post_logout_redirect_uri
+        return unless options.post_logout_redirect_uri
+        URI.encode_www_form(
+          post_logout_redirect_uri: options.post_logout_redirect_uri
+        )
+      end
+
+      def end_session_endpoint_is_valid?
+        client_options.end_session_endpoint &&
+          client_options.end_session_endpoint =~ URI::DEFAULT_PARSER.make_regexp
+      end
+
+      def logout_path_pattern
+        @logout_path_pattern ||= %r{\A#{Regexp.quote(request_path)}(/logout)}
       end
 
       class CallbackError < StandardError
