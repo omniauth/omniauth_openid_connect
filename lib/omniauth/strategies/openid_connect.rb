@@ -37,7 +37,6 @@ module OmniAuth
       option :max_age
       option :ui_locales
       option :id_token_hint
-      option :login_hint
       option :acr_values
       option :send_nonce, true
       option :send_scope_to_token_endpoint, true
@@ -121,7 +120,9 @@ module OmniAuth
           response_type: options.response_type,
           scope: options.scope,
           state: new_state,
-          login_hint: options.login_hint,
+          login_hint: params['login_hint'],
+          ui_locales: params['ui_locales'],
+          claims_locales: params['claims_locales'],
           prompt: options.prompt,
           nonce: (new_nonce if options.send_nonce),
           hd: options.hd,
@@ -233,6 +234,10 @@ module OmniAuth
       def redirect_uri
         return client_options.redirect_uri unless request.params['redirect_uri']
         "#{ client_options.redirect_uri }?redirect_uri=#{ CGI.escape(request.params['redirect_uri']) }"
+      end
+
+      def params
+        request.params
       end
 
       class CallbackError < StandardError
