@@ -112,12 +112,11 @@ module OmniAuth
       end
 
       def other_phase
-        discover!
-        if logout_path_pattern.match(current_path) && end_session_uri
-          redirect end_session_uri
-        else
-          call_app!
+        if logout_path_pattern.match(current_path)
+          discover!
+          return redirect(end_session_uri) if end_session_uri
         end
+        call_app!
       end
 
       def authorization_code
