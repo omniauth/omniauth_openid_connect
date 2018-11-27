@@ -125,6 +125,7 @@ module OmniAuth
           prompt: options.prompt,
           nonce: (new_nonce if options.send_nonce),
           hd: options.hd,
+          ui_locales: options.ui_locales
         }
         client.authorization_uri(opts.reject { |k, v| v.nil? })
       end
