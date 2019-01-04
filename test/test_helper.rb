@@ -1,7 +1,7 @@
 require 'simplecov'
 require 'coveralls'
 require 'minitest/autorun'
-require 'mocha/mini_test'
+require 'mocha/minitest'
 require 'faker'
 require 'active_support'
 require 'omniauth_openid_connect'
