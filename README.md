@@ -4,6 +4,8 @@ Originally was [omniauth-openid-connect](https://github.com/jjbohn/omniauth-open
 
 I've forked this repository and launch as separate gem because maintaining of original was dropped.
 
+[![Build Status](https://travis-ci.org/m0n9oose/omniauth_openid_connect.png?branch=master)](https://travis-ci.org/m0n9oose/omniauth_openid_connect)
+
 ## Installation
 
 Add this line to your application's Gemfile:
@@ -62,7 +64,7 @@ For the full low down on OpenID Connect, please check out
 
 ## Contributing
 
-1. Fork it ( http://github.com/jjbohn/omniauth-openid-connect/fork )
+1. Fork it ( http://github.com/m0n9oose/omniauth-openid-connect/fork )
 2. Create your feature branch (`git checkout -b my-new-feature`)
 3. Commit your changes (`git commit -am 'Add some feature'`)
 4. Push to the branch (`git push origin my-new-feature`)
