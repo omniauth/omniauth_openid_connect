@@ -4,11 +4,15 @@ require 'net/http'
 require 'open-uri'
 require 'omniauth'
 require 'openid_connect'
+require 'forwardable'
 
 module OmniAuth
   module Strategies
     class OpenIDConnect
       include OmniAuth::Strategy
+      extend Forwardable
+
+      def_delegator :request, :params
 
       option :client_options, {
         identifier: nil,
@@ -87,13 +91,13 @@ module OmniAuth
       end
 
       def callback_phase
-        error = request.params['error_reason'] || request.params['error']
+        error = params['error_reason'] || params['error']
         if error
-          raise CallbackError.new(request.params['error'], request.params['error_description'] || request.params['error_reason'], request.params['error_uri'])
-        elsif request.params['state'].to_s.empty? || request.params['state'] != stored_state
+          raise CallbackError.new(params['error'], params['error_description'] || params['error_reason'], params['error_uri'])
+        elsif params['state'].to_s.empty? || params['state'] != stored_state
           return Rack::Response.new(['401 Unauthorized'], 401).finish
-        elsif !request.params['code']
-          return fail!(:missing_code, OmniAuth::OpenIDConnect::MissingCodeError.new(request.params['error']))
+        elsif !params['code']
+          return fail!(:missing_code, OmniAuth::OpenIDConnect::MissingCodeError.new(params['error']))
         else
           options.issuer = issuer if options.issuer.blank?
           discover! if options.discovery
@@ -111,7 +115,7 @@ module OmniAuth
       end
 
       def authorization_code
-        request.params['code']
+        params['code']
       end
 
       def authorize_uri
@@ -232,12 +236,8 @@ module OmniAuth
       end
 
       def redirect_uri
-        return client_options.redirect_uri unless request.params['redirect_uri']
-        "#{ client_options.redirect_uri }?redirect_uri=#{ CGI.escape(request.params['redirect_uri']) }"
-      end
-
-      def params
-        request.params
+        return client_options.redirect_uri unless params['redirect_uri']
+        "#{ client_options.redirect_uri }?redirect_uri=#{ CGI.escape(params['redirect_uri']) }"
       end
 
       class CallbackError < StandardError
