@@ -84,6 +84,7 @@ module OmniAuth
       end
 
       def request_phase
+        options.issuer = issuer if options.issuer.nil? || options.issuer.empty?
         discover!
         redirect authorize_uri
       end
@@ -97,6 +98,7 @@ module OmniAuth
         elsif !request.params['code']
           return fail!(:missing_code, OmniAuth::OpenIDConnect::MissingCodeError.new(request.params['error']))
         else
+          options.issuer = issuer if options.issuer.nil? || options.issuer.empty?
           discover!
           client.redirect_uri = redirect_uri
           client.authorization_code = authorization_code
@@ -112,7 +114,8 @@ module OmniAuth
       end
 
       def other_phase
-        if logout_path_pattern.match(current_path)
+        if logout_path_pattern.match?(current_path)
+          options.issuer = issuer if options.issuer.nil? || options.issuer.empty?
           discover!
           return redirect(end_session_uri) if end_session_uri
         end
@@ -159,16 +162,11 @@ module OmniAuth
 
       def discover!
         return unless options.discovery
-        options.issuer = issuer if options.issuer.blank?
-        setup_client_options(config)
-      end
-
-      def setup_client_options(discover)
-        client_options.authorization_endpoint = discover.authorization_endpoint
-        client_options.token_endpoint = discover.token_endpoint
-        client_options.userinfo_endpoint = discover.userinfo_endpoint
-        client_options.jwks_uri = discover.jwks_uri
-        client_options.end_session_endpoint = discover.try :end_session_endpoint
+        client_options.authorization_endpoint = config.authorization_endpoint
+        client_options.token_endpoint = config.token_endpoint
+        client_options.userinfo_endpoint = config.userinfo_endpoint
+        client_options.jwks_uri = config.jwks_uri
+        client_options.end_session_endpoint = config.end_session_endpoint if config.respond_to?(:end_session_endpoint)
       end
 
       def user_info
