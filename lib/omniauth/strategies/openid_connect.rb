@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 require 'addressable/uri'
 require 'timeout'
 require 'net/http'
@@ -14,30 +16,29 @@ module OmniAuth
 
       def_delegator :request, :params
 
-      option :client_options, {
-        identifier: nil,
-        secret: nil,
-        redirect_uri: nil,
-        scheme: 'https',
-        host: nil,
-        port: 443,
-        authorization_endpoint: '/authorize',
-        token_endpoint: '/token',
-        userinfo_endpoint: '/userinfo',
-        jwks_uri: '/jwk',
-        end_session_endpoint: nil
-      }
+      option(:client_options, identifier: nil,
+                              secret: nil,
+                              redirect_uri: nil,
+                              scheme: 'https',
+                              host: nil,
+                              port: 443,
+                              authorization_endpoint: '/authorize',
+                              token_endpoint: '/token',
+                              userinfo_endpoint: '/userinfo',
+                              jwks_uri: '/jwk',
+                              end_session_endpoint: nil)
+
       option :issuer
       option :discovery, false
       option :client_signing_alg
       option :client_jwk_signing_key
       option :client_x509_signing_key
       option :scope, [:openid]
-      option :response_type, "code"
+      option :response_type, 'code'
       option :state
       option :response_mode
-      option :display, nil #, [:page, :popup, :touch, :wap]
-      option :prompt, nil #, [:none, :login, :consent, :select_account]
+      option :display, nil # [:page, :popup, :touch, :wap]
+      option :prompt, nil # [:none, :login, :consent, :select_account]
       option :hd, nil
       option :max_age
       option :ui_locales
@@ -66,7 +67,7 @@ module OmniAuth
           gender: user_info.gender,
           image: user_info.picture,
           phone: user_info.phone_number,
-          urls: { website: user_info.website }
+          urls: { website: user_info.website },
         }
       end
 
@@ -80,7 +81,7 @@ module OmniAuth
           token: access_token.access_token,
           refresh_token: access_token.refresh_token,
           expires_in: access_token.expires_in,
-          scope: access_token.scope
+          scope: access_token.scope,
         }
       end
 
@@ -93,27 +94,28 @@ module OmniAuth
       end
 
       def request_phase
-        options.issuer = issuer if options.issuer.nil? || options.issuer.empty?
+        options.issuer = issuer if options.issuer.to_s.empty?
         discover!
         redirect authorize_uri
       end
 
       def callback_phase
         error = params['error_reason'] || params['error']
-        if error
-          raise CallbackError.new(params['error'], params['error_description'] || params['error_reason'], params['error_uri'])
-        elsif params['state'].to_s.empty? || params['state'] != stored_state
-          raise CallbackError, 'Invalid state parameter'
-        elsif !params['code']
-          return fail!(:missing_code, OmniAuth::OpenIDConnect::MissingCodeError.new(params['error']))
-        else
-          options.issuer = issuer if options.issuer.nil? || options.issuer.empty?
-          discover!
-          client.redirect_uri = redirect_uri
-          client.authorization_code = authorization_code
-          access_token
-          super
-        end
+        error_description = params['error_description'] || params['error_reason']
+        invalid_state = params['state'].to_s.empty? || params['state'] != stored_state
+
+        raise CallbackError.new(params['error'], error_description, params['error_uri']) if error
+
+        raise CallbackError, 'Invalid state parameter' if invalid_state
+
+        return fail!(:missing_code, OmniAuth::OpenIDConnect::MissingCodeError.new(params['error'])) unless params['code']
+
+        options.issuer = issuer if options.issuer.nil? || options.issuer.empty?
+        discover!
+        client.redirect_uri = redirect_uri
+        client.authorization_code = authorization_code
+        access_token
+        super
       rescue CallbackError, ::Rack::OAuth2::Client::Error => e
         fail!(:invalid_credentials, e)
       rescue ::Timeout::Error, ::Errno::ETIMEDOUT => e
@@ -124,7 +126,7 @@ module OmniAuth
 
       def other_phase
         if logout_path_pattern.match?(current_path)
-          options.issuer = issuer if options.issuer.nil? || options.issuer.empty?
+          options.issuer = issuer if options.issuer.to_s.empty?
           discover!
           return redirect(end_session_uri) if end_session_uri
         end
@@ -137,6 +139,7 @@ module OmniAuth
 
       def end_session_uri
         return unless end_session_endpoint_is_valid?
+
         end_session_uri = URI(client_options.end_session_endpoint)
         end_session_uri.query = encoded_post_logout_redirect_uri
         end_session_uri.to_s
@@ -155,11 +158,12 @@ module OmniAuth
           nonce: (new_nonce if options.send_nonce),
           hd: options.hd,
         }
-        client.authorization_uri(opts.reject { |k, v| v.nil? })
+        client.authorization_uri(opts.reject { |_k, v| v.nil? })
       end
 
       def public_key
         return config.jwks if options.discovery
+
         key_or_secret
       end
 
@@ -173,6 +177,7 @@ module OmniAuth
 
       def discover!
         return unless options.discovery
+
         client_options.authorization_endpoint = config.authorization_endpoint
         client_options.token_endpoint = config.token_endpoint
         client_options.userinfo_endpoint = config.userinfo_endpoint
@@ -185,19 +190,19 @@ module OmniAuth
       end
 
       def access_token
-        @access_token ||= begin
-          _access_token = client.access_token!(
-            scope: (options.scope if options.send_scope_to_token_endpoint),
-            client_auth_method: options.client_auth_method
-          )
-          _id_token = decode_id_token _access_token.id_token
-          _id_token.verify!(
-            issuer: options.issuer,
-            client_id: client_options.identifier,
-            nonce: stored_nonce
-          )
-          _access_token
-        end
+        return @access_token if @access_token
+
+        @access_token = client.access_token!(
+          scope: (options.scope if options.send_scope_to_token_endpoint),
+          client_auth_method: options.client_auth_method
+        )
+        id_token = decode_id_token(@access_token.id_token)
+        id_token.verify!(
+          issuer: options.issuer,
+          client_id: client_options.identifier,
+          nonce: stored_nonce
+        )
+        @access_token
       end
 
       def decode_id_token(id_token)
@@ -233,20 +238,20 @@ module OmniAuth
 
       def session
         return {} if @env.nil?
+
         super
       end
 
       def key_or_secret
         case options.client_signing_alg
         when :HS256, :HS384, :HS512
-          return client_options.secret
+          client_options.secret
         when :RS256, :RS384, :RS512
           if options.client_jwk_signing_key
-            return parse_jwk_key(options.client_jwk_signing_key)
+            parse_jwk_key(options.client_jwk_signing_key)
           elsif options.client_x509_signing_key
-            return parse_x509_key(options.client_x509_signing_key)
+            parse_x509_key(options.client_x509_signing_key)
           end
-        else
         end
       end
 
@@ -256,24 +261,24 @@ module OmniAuth
 
       def parse_jwk_key(key)
         json = JSON.parse(key)
-        if json.has_key?('keys')
-          JSON::JWK::Set.new json['keys']
-        else
-          JSON::JWK.new json
-        end
+        return JSON::JWK::Set.new(json['keys']) if json.key?('keys')
+
+        JSON::JWK.new(json)
       end
 
       def decode(str)
-        UrlSafeBase64.decode64(str).unpack('B*').first.to_i(2).to_s
+        UrlSafeBase64.decode64(str).unpack1('B*').to_i(2).to_s
       end
 
       def redirect_uri
         return client_options.redirect_uri unless params['redirect_uri']
+
         "#{ client_options.redirect_uri }?redirect_uri=#{ CGI.escape(params['redirect_uri']) }"
       end
 
       def encoded_post_logout_redirect_uri
         return unless options.post_logout_redirect_uri
+
         URI.encode_www_form(
           post_logout_redirect_uri: options.post_logout_redirect_uri
         )
@@ -291,7 +296,7 @@ module OmniAuth
       class CallbackError < StandardError
         attr_accessor :error, :error_reason, :error_uri
 
-        def initialize(error, error_reason=nil, error_uri=nil)
+        def initialize(error, error_reason = nil, error_uri = nil)
           self.error = error
           self.error_reason = error_reason
           self.error_uri = error_uri
