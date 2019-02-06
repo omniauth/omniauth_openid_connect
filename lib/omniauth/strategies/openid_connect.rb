@@ -203,7 +203,9 @@ module OmniAuth
       end
 
       def new_state
-        state = options.state.call if options.state.respond_to? :call
+        if options.state.respond_to? :call
+          state = options.state.arity == 1 ? options.state.call(env) : options.state.call
+        end
         session['omniauth.state'] = state || SecureRandom.hex(16)
       end
 
