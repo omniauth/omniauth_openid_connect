@@ -2,7 +2,7 @@ require_relative '../../../test_helper'
 
 module OmniAuth
   module Strategies
-    class OpenIDConnectTest < StrategyTestCase
+    class TaraTest < StrategyTestCase
       def test_client_options_defaults
         assert_equal 'https', strategy.options.client_options.scheme
         assert_equal 443, strategy.options.client_options.port
@@ -35,7 +35,7 @@ module OmniAuth
         config.stubs(:end_session_endpoint).returns('https://example.com/logout')
         ::OpenIDConnect::Discovery::Provider::Config.stubs(:discover!).with('https://example.com/').returns(config)
 
-        request.stubs(:path_info).returns('/auth/openidconnect/logout')
+        request.stubs(:path_info).returns('/auth/tara/logout')
 
         strategy.expects(:redirect).with(regexp_matches(expected_redirect))
         strategy.other_phase
@@ -59,7 +59,7 @@ module OmniAuth
         config.stubs(:end_session_endpoint).returns('https://example.com/logout')
         ::OpenIDConnect::Discovery::Provider::Config.stubs(:discover!).with('https://example.com/').returns(config)
 
-        request.stubs(:path_info).returns('/auth/openidconnect/logout')
+        request.stubs(:path_info).returns('/auth/tara/logout')
 
         strategy.expects(:redirect).with(expected_redirect)
         strategy.other_phase

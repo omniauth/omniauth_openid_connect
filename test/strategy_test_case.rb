@@ -41,7 +41,7 @@ class StrategyTestCase < MiniTest::Test
   end
 
   def strategy
-    @strategy ||= OmniAuth::Strategies::OpenIDConnect.new(DummyApp.new).tap do |strategy|
+    @strategy ||= OmniAuth::Strategies::Tara.new(DummyApp.new).tap do |strategy|
       strategy.options.client_options.identifier = @identifier
       strategy.options.client_options.secret = @secret
       strategy.stubs(:request).returns(request)

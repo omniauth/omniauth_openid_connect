@@ -1,17 +1,16 @@
 # coding: utf-8
 lib = File.expand_path('../lib', __FILE__)
 $LOAD_PATH.unshift(lib) unless $LOAD_PATH.include?(lib)
-require 'omniauth/openid_connect/version'
+require 'omniauth/tara/version'
 
 Gem::Specification.new do |spec|
-  spec.name          = 'omniauth_openid_connect'
-  spec.version       = OmniAuth::OpenIDConnect::VERSION
-  spec.authors       = ['John Bohn', 'Ilya Shcherbinin']
-  spec.email         = ['jjbohn@gmail.com', 'm0n9oose@gmail.com']
-  spec.summary       = 'OpenID Connect Strategy for OmniAuth'
-  spec.description   = 'OpenID Connect Strategy for OmniAuth.'
-  spec.homepage      = 'https://github.com/jjbohn/omniauth-openid-connect'
-  spec.license       = 'MIT'
+  spec.name = 'omniauth-tara'
+  spec.version = OmniAuth::Tara::VERSION
+  spec.authors = ['Artur Beljajev', 'Maciej Szlosarczyk']
+  spec.email = ['artur.beljajev@internet.ee', 'maciej.szlosarczyk@eestiinternet.ee']
+  spec.summary = 'TARA-Doku (https://github.com/e-gov/TARA-Doku) strategy for OmniAuth'
+  spec.homepage = 'https://github.com/internetee/omniauth-tara'
+  spec.license = 'MIT/X11'
 
   spec.files         = `git ls-files -z`.split("\x0")
   spec.executables   = spec.files.grep(%r(^bin/)) { |f| File.basename(f) }
