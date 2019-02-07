@@ -1,5 +1,7 @@
 # OmniAuth::Tara
 
+[![Build Status](https://travis-ci.org/internetee/omniauth-tara.svg?branch=master)](https://travis-ci.org/internetee/omniauth-tara)
+
 Originally based on [omniauth_openid_connect](https://github.com/m0n9oose/omniauth_openid_connect),
 with parts rewritten to fit TARA-Doku protocol.
 
