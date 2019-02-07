@@ -8,7 +8,7 @@ require 'forwardable'
 
 module OmniAuth
   module Strategies
-    class OpenIDConnect
+    class Tara
       include OmniAuth::Strategy
       extend Forwardable
 
@@ -99,7 +99,7 @@ module OmniAuth
         elsif params['state'].to_s.empty? || params['state'] != stored_state
           return Rack::Response.new(['401 Unauthorized'], 401).finish
         elsif !params['code']
-          return fail!(:missing_code, OmniAuth::OpenIDConnect::MissingCodeError.new(params['error']))
+          return fail!(:missing_code, OmniAuth::Tara::MissingCodeError.new(params['error']))
         else
           options.issuer = issuer if options.issuer.nil? || options.issuer.empty?
           discover!
@@ -293,4 +293,4 @@ module OmniAuth
   end
 end
 
-OmniAuth.config.add_camelization 'openid_connect', 'OpenIDConnect'
+OmniAuth.config.add_camelization 'tara', 'Tara'
