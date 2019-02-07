@@ -380,7 +380,7 @@ module OmniAuth
 
         HTTPClient.any_instance.stubs(:post).with(
           "#{ opts.scheme }://#{ opts.host }:#{ opts.port }#{ opts.token_endpoint }",
-          { scope: 'openid', grant_type: :client_credentials, client_id: @identifier, client_secret: @secret },
+          { grant_type: :client_credentials, client_id: @identifier, client_secret: @secret },
           {}
         ).returns(success)
 
