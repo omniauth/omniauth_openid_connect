@@ -42,6 +42,7 @@ module OmniAuth
       option :hd, nil
       option :max_age
       option :ui_locales
+      option :partner
       option :id_token_hint
       option :acr_values
       option :send_nonce, true
@@ -147,6 +148,7 @@ module OmniAuth
 
       def authorize_uri
         client.redirect_uri = redirect_uri
+
         opts = {
           response_type: options.response_type,
           scope: options.scope,
@@ -157,6 +159,8 @@ module OmniAuth
           prompt: options.prompt,
           nonce: (new_nonce if options.send_nonce),
           hd: options.hd,
+          ui_locales: options.ui_locales,
+          partner: options.partner
         }
         client.authorization_uri(opts.reject { |_k, v| v.nil? })
       end
