@@ -44,7 +44,7 @@ module OmniAuth
       option :id_token_hint
       option :acr_values
       option :send_nonce, true
-      option :send_scope_to_token_endpoint, true
+      option :send_scope_to_token_endpoint, false
       option :client_auth_method
       option :post_logout_redirect_uri
 
@@ -53,14 +53,8 @@ module OmniAuth
       info do
         {
           name: user_info.name,
-          email: user_info.email,
-          nickname: user_info.preferred_username,
           first_name: user_info.given_name,
-          last_name: user_info.family_name,
-          gender: user_info.gender,
-          image: user_info.picture,
-          phone: user_info.phone_number,
-          urls: { website: user_info.website }
+          last_name: user_info.last_name
         }
       end
 
@@ -175,7 +169,7 @@ module OmniAuth
       end
 
       def user_info
-        @user_info ||= access_token.userinfo!
+        @user_info ||= OmniAuth::Tara::UserInfo.new(access_token.id_token, public_key)
       end
 
       def access_token

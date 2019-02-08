@@ -94,7 +94,7 @@ module OmniAuth
         issuer.stubs(:issuer).returns('https://example.com/')
         ::OpenIDConnect::Discovery::Provider.stubs(:discover!).returns(issuer)
 
-        config = stub('OpenIDConnect::Discovery::Provder::Config')
+        config = stub('OpenIDConnect::Discovery::Provider::Config')
         config.stubs(:authorization_endpoint).returns('https://example.com/authorization')
         config.stubs(:token_endpoint).returns('https://example.com/token')
         config.stubs(:userinfo_endpoint).returns('https://example.com/userinfo')
@@ -139,7 +139,8 @@ module OmniAuth
         access_token.stubs(:scope)
         access_token.stubs(:id_token).returns(File.read('test/fixtures/id_token.txt'))
         client.expects(:access_token!).at_least_once.returns(access_token)
-        access_token.expects(:userinfo!).returns(user_info)
+        id_token.stubs(:raw_attributes).returns(id_token_raw_attributes)
+        OmniAuth::Tara::UserInfo.expects(:new).returns(user_info)
 
         strategy.call!('rack.session' => { 'omniauth.state' => state, 'omniauth.nonce' => nonce })
         strategy.callback_phase
@@ -182,7 +183,7 @@ module OmniAuth
         access_token.stubs(:scope)
         access_token.stubs(:id_token).returns(File.read('test/fixtures/id_token.txt'))
         client.expects(:access_token!).at_least_once.returns(access_token)
-        access_token.expects(:userinfo!).returns(user_info)
+        id_token.stubs(:raw_attributes).returns(id_token_raw_attributes)
 
         strategy.call!('rack.session' => { 'omniauth.state' => state, 'omniauth.nonce' => nonce })
         strategy.callback_phase
@@ -261,18 +262,13 @@ module OmniAuth
       def test_info
         info = strategy.info
         assert_equal user_info.name, info[:name]
-        assert_equal user_info.email, info[:email]
-        assert_equal user_info.preferred_username, info[:nickname]
         assert_equal user_info.given_name, info[:first_name]
-        assert_equal user_info.family_name, info[:last_name]
-        assert_equal user_info.gender, info[:gender]
-        assert_equal user_info.picture, info[:image]
-        assert_equal user_info.phone_number, info[:phone]
-        assert_equal({ website: user_info.website }, info[:urls])
+        assert_equal user_info.last_name, info[:last_name]
       end
 
       def test_extra
-        assert_equal({ raw_info: user_info.as_json }, strategy.extra)
+        expected_result = {:raw_info => id_token_raw_attributes }
+        assert_equal(expected_result, strategy.extra)
       end
 
       def test_credentials
@@ -380,7 +376,7 @@ module OmniAuth
 
         HTTPClient.any_instance.stubs(:post).with(
           "#{ opts.scheme }://#{ opts.host }:#{ opts.port }#{ opts.token_endpoint }",
-          { scope: 'openid', grant_type: :client_credentials, client_id: @identifier, client_secret: @secret },
+          { grant_type: :client_credentials, client_id: @identifier, client_secret: @secret },
           {}
         ).returns(success)
 
