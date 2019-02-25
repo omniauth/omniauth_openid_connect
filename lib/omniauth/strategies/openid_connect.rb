@@ -47,8 +47,14 @@ module OmniAuth
       option :send_scope_to_token_endpoint, true
       option :client_auth_method
       option :post_logout_redirect_uri
+      option :uid_field, 'sub'
 
-      uid { user_info.sub }
+      def uid
+        user_info.public_send(options.uid_field.to_s)
+      rescue NoMethodError
+        log :warn, "User sub:#{user_info.sub} missing info field: #{options.uid_field}"
+        user_info.sub
+      end
 
       info do
         {

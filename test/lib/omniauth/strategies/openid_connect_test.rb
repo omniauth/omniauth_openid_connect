@@ -114,6 +114,12 @@ module OmniAuth
 
       def test_uid
         assert_equal user_info.sub, strategy.uid
+
+        strategy.options.uid_field = 'preferred_username'
+        assert_equal user_info.preferred_username, strategy.uid
+
+        strategy.options.uid_field = 'something'
+        assert_equal user_info.sub, strategy.uid
       end
 
       def test_callback_phase(session = {}, params = {})
@@ -211,6 +217,18 @@ module OmniAuth
 
         assert result.kind_of?(Array)
         assert result.first == 401, "Expecting unauthorized"
+      end
+
+      def test_callback_phase_without_code
+        state = SecureRandom.hex(16)
+        nonce = SecureRandom.hex(16)
+        request.stubs(:params).returns('state' => state)
+        request.stubs(:path_info).returns('')
+
+        strategy.call!('rack.session' => { 'omniauth.state' => state, 'omniauth.nonce' => nonce })
+
+        strategy.expects(:fail!)
+        strategy.callback_phase
       end
 
       def test_callback_phase_with_timeout

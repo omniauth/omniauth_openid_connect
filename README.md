@@ -28,6 +28,7 @@ config.omniauth :openid_connect, {
   name: :my_provider,
   scope: [:openid, :email, :profile, :address],
   response_type: :code,
+  uid_field: "preferred_username",
   client_options: {
     port: 443,
     scheme: "https",
@@ -58,6 +59,10 @@ Configuration details:
   If provider does not have Webfinger endpoint, You can specify "Issuer" to option.  
   e.g. `issuer: "https://myprovider.com"`  
   It means to get configuration from "https://myprovider.com/.well-known/openid-configuration".
+  * The uid is by default using the `sub` value from the `user_info` response,
+  which in some applications is not the expected value. To avoid such limitations, the uid label can be
+  configured by providing the omniauth `uid_label` option to a different label (i.e. `preferred_username`)
+  that appears in the `user_info` details.
 
 For the full low down on OpenID Connect, please check out
 [the spec](http://openid.net/specs/openid-connect-core-1_0.html).
