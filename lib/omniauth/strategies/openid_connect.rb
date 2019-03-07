@@ -103,7 +103,7 @@ module OmniAuth
         if error
           raise CallbackError.new(params['error'], params['error_description'] || params['error_reason'], params['error_uri'])
         elsif params['state'].to_s.empty? || params['state'] != stored_state
-          raise CallbackError.new('Invalid state parameter')
+          raise CallbackError, 'Invalid state parameter'
         elsif !params['code']
           return fail!(:missing_code, OmniAuth::OpenIDConnect::MissingCodeError.new(params['error']))
         else
