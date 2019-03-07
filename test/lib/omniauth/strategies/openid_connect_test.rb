@@ -213,10 +213,8 @@ module OmniAuth
         request.stubs(:path_info).returns('')
 
         strategy.call!('rack.session' => { 'omniauth.state' => state, 'omniauth.nonce' => nonce })
-        result = strategy.callback_phase
-
-        assert result.kind_of?(Array)
-        assert result.first == 401, "Expecting unauthorized"
+        strategy.expects(:fail!)
+        strategy.callback_phase
       end
 
       def test_callback_phase_without_code
@@ -363,12 +361,10 @@ module OmniAuth
         code = SecureRandom.hex(16)
         request.stubs(:params).returns('code' => code, 'state' => 43)
         request.stubs(:path_info).returns('')
+
         strategy.call!('rack.session' => session)
-
-        result = strategy.callback_phase
-
-        assert result.kind_of?(Array)
-        assert result.first == 401, 'Expecting unauthorized'
+        strategy.expects(:fail!)
+        strategy.callback_phase
       end
 
       def test_option_client_auth_method
