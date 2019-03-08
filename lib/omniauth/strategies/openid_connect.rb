@@ -181,7 +181,6 @@ module OmniAuth
 
       def discover!
         return unless options.discovery
-
         client_options.authorization_endpoint = config.authorization_endpoint
         client_options.token_endpoint = config.token_endpoint
         client_options.userinfo_endpoint = config.userinfo_endpoint
