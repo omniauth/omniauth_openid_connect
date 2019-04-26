@@ -65,7 +65,8 @@ For the full low down on OpenID Connect, please check out
 ## Contributing
 
 1. Fork it ( http://github.com/m0n9oose/omniauth-openid-connect/fork )
-2. Create your feature branch (`git checkout -b my-new-feature`)
-3. Commit your changes (`git commit -am 'Add some feature'`)
-4. Push to the branch (`git push origin my-new-feature`)
-5. Create new Pull Request
+1. Create your feature branch (`git checkout -b my-new-feature`)
+1. Run the tests (`bundle install && bundle exec rake test`)
+1. Commit your changes (`git commit -am 'Add some feature'`)
+1. Push to the branch (`git push origin my-new-feature`)
+1. Create new Pull Request
