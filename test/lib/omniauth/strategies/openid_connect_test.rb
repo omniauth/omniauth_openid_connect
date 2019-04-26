@@ -360,15 +360,15 @@ module OmniAuth
       end
 
       def test_state
-        strategy.options.state = lambda { 42 }
-        session = { "state" => 42 }
+        strategy.options.state = -> { 42 }
 
-        expected_redirect = /&state=/
+        expected_redirect = /&state=42/
         strategy.options.issuer = 'example.com'
         strategy.options.client_options.host = 'example.com'
         strategy.expects(:redirect).with(regexp_matches(expected_redirect))
         strategy.request_phase
 
+        session = { 'state' => 42 }
         # this should succeed as the correct state is passed with the request
         test_callback_phase(session, { 'state' => 42 })
 
@@ -380,6 +380,22 @@ module OmniAuth
         strategy.call!('rack.session' => session)
         strategy.expects(:fail!)
         strategy.callback_phase
+      end
+
+      def test_dynamic_state
+        # Stub request parameters
+        Strategy.send(:define_method, 'env', -> { { QUERY_STRING: { state: 'abc', client_id: '123' } } })
+
+        strategy.options.state = lambda { |env|
+          # Get params from request, e.g. CGI.parse(env['QUERY_STRING'])
+          env[:QUERY_STRING][:state] + env[:QUERY_STRING][:client_id]
+        }
+
+        expected_redirect = /&state=abc123/
+        strategy.options.issuer = 'example.com'
+        strategy.options.client_options.host = 'example.com'
+        strategy.expects(:redirect).with(regexp_matches(expected_redirect))
+        strategy.request_phase
       end
 
       def test_option_client_auth_method
