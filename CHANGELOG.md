@@ -1,3 +1,10 @@
+# v0.4.0 (5.06.2019)
+
+- Add claims parameter to authorize request
+- Allow options to be modified both by options and by request parameters, prioritizing request parameters
+- Support back to Ruby 2.3
+- Make it clear what options come from what standards
+
 # v0.3.1 (08.06.2019)
 
 - Set default OmniAuth name to openid_connect [#23](https://github.com/m0n9oose/omniauth_openid_connect/pull/23)

@@ -29,27 +29,39 @@ module OmniAuth
                               jwks_uri: '/jwk',
                               end_session_endpoint: nil)
 
-      option :issuer
+      #  Custom configuration
       option :discovery, false
-      option :client_signing_alg
-      option :client_jwk_signing_key
-      option :client_x509_signing_key
-      option :scope, [:openid]
-      option :response_type, 'code'
-      option :state
-      option :response_mode
-      option :display, nil # [:page, :popup, :touch, :wap]
-      option :prompt, nil # [:none, :login, :consent, :select_account]
-      option :hd, nil
-      option :max_age
-      option :ui_locales
-      option :id_token_hint
+      option :display # [:page, :popup, :touch, :wap]
+      option :uid_field, 'sub'
+
+      # OpenID Connect Core 1.0 (Final) Specification
+      # https://openid.net/specs/openid-connect-core-1_0.html
       option :acr_values
+      option :claims
+      option :claims_locales
+      option :client_auth_method, :basic # https://github.com/nov/rack-oauth2/blob/master/lib/rack/oauth2/client.rb#L84
+      option :client_jwk_signing_key
+      option :client_signing_alg
+      option :client_x509_signing_key
+      option :id_token_hint
+      option :issuer
+      option :max_age
+      option :prompt # [:none, :login, :consent, :select_account]
+      option :response_mode
+      option :response_type, :code
+      option :scope, [:openid]
       option :send_nonce, true
       option :send_scope_to_token_endpoint, true
-      option :client_auth_method
+      option :state
+      option :ui_locales
+
+      # OpenID Connect Session Management 1.0 (draft 28) Specification
+      # https://openid.net/specs/openid-connect-session-1_0.html
       option :post_logout_redirect_uri
-      option :uid_field, 'sub'
+
+      # Google specific
+      # https://developers.google.com/identity/protocols/OpenIDConnect#authenticationuriparameters
+      option :google_hd
 
       def uid
         user_info.public_send(options.uid_field.to_s)
@@ -126,7 +138,7 @@ module OmniAuth
       end
 
       def other_phase
-        if logout_path_pattern.match?(current_path)
+        if logout_path_pattern === current_path
           options.issuer = issuer if options.issuer.to_s.empty?
           discover!
           return redirect(end_session_uri) if end_session_uri
@@ -147,17 +159,20 @@ module OmniAuth
       end
 
       def authorize_uri
+        claims = params['claims'] || options.claims
+        claims = claims ? JSON.dump(claims) : nil
         client.redirect_uri = redirect_uri
         opts = {
-          response_type: options.response_type,
-          scope: options.scope,
+          claims: claims,
+          claims_locales: params['claims_locales'] || options.claims_locales,
+          google_hd: params['google_hd'] || options.google_hd,
+          login_hint: params['login_hint'] || options.login_hint,
+          nonce: (new_nonce if params['send_nonce'] || options.send_nonce),
+          prompt: params['prompt'] || options.prompt,
+          response_type: params['response_type'] || options.response_type,
+          scope: params['scope'] || options.scope,
           state: new_state,
-          login_hint: params['login_hint'],
-          ui_locales: params['ui_locales'],
-          claims_locales: params['claims_locales'],
-          prompt: options.prompt,
-          nonce: (new_nonce if options.send_nonce),
-          hd: options.hd,
+          ui_locales: params['ui_locales'] || options.ui_locales,
         }
         client.authorization_uri(opts.reject { |_k, v| v.nil? })
       end
