@@ -8,7 +8,7 @@ Gem::Specification.new do |spec|
   spec.add_dependency 'addressable', '~> 2.5'
   spec.add_dependency 'omniauth', '~> 1.3'
   spec.add_dependency 'openid_connect', '~> 1.1'
-  spec.add_development_dependency 'coveralls', '~> 0.8'
+  spec.add_development_dependency 'coveralls', '~> 0.8'ZZz
   spec.add_development_dependency 'faker', '~> 1.6'
   spec.add_development_dependency 'guard', '~> 2.14'
   spec.add_development_dependency 'guard-bundler', '~> 2.2'
@@ -24,9 +24,9 @@ Gem::Specification.new do |spec|
   spec.executables   = spec.files.grep(%r{^bin/}) { |f| File.basename(f) }
   spec.files         = `git ls-files -z`.split("\x0")
   spec.homepage      = 'https://github.com/m0n9oose/omniauth_openid_connect'
-  spec.license       = %w[MIT]
+  spec.license       = ['MIT']
   spec.name          = 'omniauth_openid_connect'
-  spec.require_paths = %w[lib]
+  spec.require_paths = ['lib']
   spec.required_ruby_version = '>= 2.3'
   spec.summary       = spec.description
   spec.test_files    = spec.files.grep(%r{^(test|spec|features)/})
