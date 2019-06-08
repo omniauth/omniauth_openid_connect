@@ -16,6 +16,7 @@ module OmniAuth
 
       def_delegator :request, :params
 
+      option :name, 'openid_connect'
       option(:client_options, identifier: nil,
                               secret: nil,
                               redirect_uri: nil,
