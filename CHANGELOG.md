@@ -1,3 +1,7 @@
+# v0.3.1 (08.06.2019)
+
+- Set default OmniAuth name to openid_connect [#23](https://github.com/m0n9oose/omniauth_openid_connect/pull/23)
+
 # v0.3.0 (27.04.2019)
 
 - RP-Initiated Logout phase [#5](https://github.com/m0n9oose/omniauth_openid_connect/pull/5)
