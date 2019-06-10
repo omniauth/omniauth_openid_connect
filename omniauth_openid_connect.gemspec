@@ -24,7 +24,7 @@ Gem::Specification.new do |spec|
   spec.executables   = spec.files.grep(%r{^bin/}) { |f| File.basename(f) }
   spec.files         = `git ls-files -z`.split("\x0")
   spec.homepage      = 'https://github.com/m0n9oose/omniauth_openid_connect'
-  spec.license       = ['MIT']
+  spec.license       = 'MIT'
   spec.name          = 'omniauth_openid_connect'
   spec.require_paths = ['lib']
   spec.required_ruby_version = '>= 2.3'
