@@ -112,6 +112,17 @@ module OmniAuth
         assert_nil strategy.options.client_options.end_session_endpoint
       end
 
+      def test_request_phase_with_response_mode
+        expected_redirect = /^https:\/\/example\.com\/authorize\?client_id=1234&nonce=\w{32}&response_mode=form_post&response_type=id_token&scope=openid&state=\w{32}$/
+        strategy.options.issuer = 'example.com'
+        strategy.options.response_mode = 'form_post'
+        strategy.options.response_type = 'id_token'
+        strategy.options.client_options.host = 'example.com'
+
+        strategy.expects(:redirect).with(regexp_matches(expected_redirect))
+        strategy.request_phase
+      end
+
       def test_uid
         assert_equal user_info.sub, strategy.uid
 

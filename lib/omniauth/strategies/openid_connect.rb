@@ -37,7 +37,7 @@ module OmniAuth
       option :scope, [:openid]
       option :response_type, 'code'
       option :state
-      option :response_mode
+      option :response_mode # [:query, :fragment, :form_post, :web_message]
       option :display, nil # [:page, :popup, :touch, :wap]
       option :prompt, nil # [:none, :login, :consent, :select_account]
       option :hd, nil
@@ -150,6 +150,7 @@ module OmniAuth
         client.redirect_uri = redirect_uri
         opts = {
           response_type: options.response_type,
+          response_mode: options.response_mode,
           scope: options.scope,
           state: new_state,
           login_hint: params['login_hint'],
