@@ -68,6 +68,7 @@ Configuration details:
   configured by providing the omniauth `uid_field` option to a different label (i.e. `preferred_username`)
   that appears in the `user_info` details.
   * The `issuer` property should exactly match the provider's issuer link.
+  * The `response_mode` option is optional and specifies how the result of the authorization request is formatted.
 
 For the full low down on OpenID Connect, please check out
 [the spec](http://openid.net/specs/openid-connect-core-1_0.html).
