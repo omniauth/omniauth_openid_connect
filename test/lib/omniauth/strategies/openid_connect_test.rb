@@ -136,6 +136,7 @@ module OmniAuth
         id_token = stub('OpenIDConnect::ResponseObject::IdToken')
         id_token.stubs(:verify!).with(issuer: strategy.options.issuer, client_id: @identifier, nonce: nonce).returns(true)
         ::OpenIDConnect::ResponseObject::IdToken.stubs(:decode).returns(id_token)
+        id_token.expects(:verify!)
 
         strategy.unstub(:user_info)
         access_token = stub('OpenIDConnect::AccessToken')
@@ -241,6 +242,11 @@ module OmniAuth
         strategy.stubs(:access_token).raises(::Timeout::Error.new('error'))
         strategy.call!('rack.session' => { 'omniauth.state' => state, 'omniauth.nonce' => nonce })
         strategy.expects(:fail!)
+
+        id_token = stub('OpenIDConnect::ResponseObject::IdToken')
+        id_token.stubs(:verify!).with(issuer: 'example.com', client_id: @identifier, nonce: nonce).returns(true)
+        ::OpenIDConnect::ResponseObject::IdToken.stubs(:decode).returns(id_token)
+
         strategy.callback_phase
       end
 
@@ -256,6 +262,11 @@ module OmniAuth
         strategy.stubs(:access_token).raises(::Errno::ETIMEDOUT.new('error'))
         strategy.call!('rack.session' => { 'omniauth.state' => state, 'omniauth.nonce' => nonce })
         strategy.expects(:fail!)
+
+        id_token = stub('OpenIDConnect::ResponseObject::IdToken')
+        id_token.stubs(:verify!).with(issuer: 'example.com', client_id: @identifier, nonce: nonce).returns(true)
+        ::OpenIDConnect::ResponseObject::IdToken.stubs(:decode).returns(id_token)
+
         strategy.callback_phase
       end
 
@@ -271,6 +282,11 @@ module OmniAuth
         strategy.stubs(:access_token).raises(::SocketError.new('error'))
         strategy.call!('rack.session' => { 'omniauth.state' => state, 'omniauth.nonce' => nonce })
         strategy.expects(:fail!)
+
+        id_token = stub('OpenIDConnect::ResponseObject::IdToken')
+        id_token.stubs(:verify!).with(issuer: 'example.com', client_id: @identifier, nonce: nonce).returns(true)
+        ::OpenIDConnect::ResponseObject::IdToken.stubs(:decode).returns(id_token)
+
         strategy.callback_phase
       end
 
@@ -286,6 +302,11 @@ module OmniAuth
         strategy.stubs(:access_token).raises(::Rack::OAuth2::Client::Error.new('error', error: 'Unknown'))
         strategy.call!('rack.session' => { 'omniauth.state' => state, 'omniauth.nonce' => nonce })
         strategy.expects(:fail!)
+
+        id_token = stub('OpenIDConnect::ResponseObject::IdToken')
+        id_token.stubs(:verify!).with(issuer: 'example.com', client_id: @identifier, nonce: nonce).returns(true)
+        ::OpenIDConnect::ResponseObject::IdToken.stubs(:decode).returns(id_token)
+
         strategy.callback_phase
       end
 

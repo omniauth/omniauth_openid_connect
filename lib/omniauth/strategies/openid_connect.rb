@@ -112,6 +112,12 @@ module OmniAuth
         return fail!(:missing_code, OmniAuth::OpenIDConnect::MissingCodeError.new(params['error'])) unless params['code']
 
         options.issuer = issuer if options.issuer.nil? || options.issuer.empty?
+
+        decode_id_token(params['id_token'])
+          .verify! issuer: options.issuer,
+                   client_id: client_options.identifier,
+                   nonce: stored_nonce
+
         discover!
         client.redirect_uri = redirect_uri
         client.authorization_code = authorization_code
@@ -197,13 +203,6 @@ module OmniAuth
           scope: (options.scope if options.send_scope_to_token_endpoint),
           client_auth_method: options.client_auth_method
         )
-        id_token = decode_id_token(@access_token.id_token)
-        id_token.verify!(
-          issuer: options.issuer,
-          client_id: client_options.identifier,
-          nonce: stored_nonce
-        )
-        @access_token
       end
 
       def decode_id_token(id_token)
