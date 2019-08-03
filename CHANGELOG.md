@@ -1,3 +1,9 @@
+# v0.3.2 (03.08.2019)
+
+- Use response_mode in `authorize_uri` if the option is defined [#30](https://github.com/m0n9oose/omniauth_openid_connect/pull/30)
+- Move verification of `id_token` to before accessing tokens [#28](https://github.com/m0n9oose/omniauth_openid_connect/pull/28)
+- Update omniauth dependency [#26](https://github.com/m0n9oose/omniauth_openid_connect/pull/26)
+
 # v0.3.1 (08.06.2019)
 
 - Set default OmniAuth name to openid_connect [#23](https://github.com/m0n9oose/omniauth_openid_connect/pull/23)
