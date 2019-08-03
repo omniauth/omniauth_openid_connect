@@ -237,7 +237,20 @@ module OmniAuth
 
         strategy.call!('rack.session' => { 'omniauth.state' => state, 'omniauth.nonce' => nonce })
 
-        strategy.expects(:fail!)
+        strategy.expects(:fail!).with(:missing_code, is_a(OmniAuth::OpenIDConnect::MissingCodeError))
+        strategy.callback_phase
+      end
+
+      def test_callback_phase_without_id_token
+        state = SecureRandom.hex(16)
+        nonce = SecureRandom.hex(16)
+        request.stubs(:params).returns('state' => state)
+        request.stubs(:path_info).returns('')
+        strategy.options.response_type = 'id_token'
+
+        strategy.call!('rack.session' => { 'omniauth.state' => state, 'omniauth.nonce' => nonce })
+
+        strategy.expects(:fail!).with(:missing_id_token, is_a(OmniAuth::OpenIDConnect::MissingIdTokenError))
         strategy.callback_phase
       end
 

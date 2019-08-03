@@ -35,7 +35,7 @@ module OmniAuth
       option :client_jwk_signing_key
       option :client_x509_signing_key
       option :scope, [:openid]
-      option :response_type, 'code'
+      option :response_type, 'code' # ['code', 'id_token']
       option :state
       option :response_mode # [:query, :fragment, :form_post, :web_message]
       option :display, nil # [:page, :popup, :touch, :wap]
@@ -109,7 +109,8 @@ module OmniAuth
 
         raise CallbackError, 'Invalid state parameter' if invalid_state
 
-        return fail!(:missing_code, OmniAuth::OpenIDConnect::MissingCodeError.new(params['error'])) unless params['code']
+        return fail!(:missing_code, OmniAuth::OpenIDConnect::MissingCodeError.new(params['error'])) unless valid_response_type?('code')
+        return fail!(:missing_id_token, OmniAuth::OpenIDConnect::MissingIdTokenError.new(params['error'])) unless valid_response_type?('id_token')
 
         options.issuer = issuer if options.issuer.nil? || options.issuer.empty?
 
@@ -120,6 +121,9 @@ module OmniAuth
 
         discover!
         client.redirect_uri = redirect_uri
+
+        return id_token_callback_phase if options.response_type.to_s == 'id_token'
+
         client.authorization_code = authorization_code
         access_token
         super
@@ -292,6 +296,21 @@ module OmniAuth
 
       def logout_path_pattern
         @logout_path_pattern ||= %r{\A#{Regexp.quote(request_path)}(/logout)}
+      end
+
+      def id_token_callback_phase
+        user_data = decode_id_token(params['id_token']).raw_attributes
+        env['omniauth.auth'] = AuthHash.new(
+          provider: name,
+          uid: user_data['sub'],
+          info: { name: user_data['name'], email: user_data['email'] }
+        )
+        call_app!
+      end
+
+      def valid_response_type?(type)
+        # pass if configured response_type is different than tested here
+        options.response_type == type.to_s ? params.key?(type) : true
       end
 
       class CallbackError < StandardError

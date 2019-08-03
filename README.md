@@ -48,11 +48,11 @@ Configuration details:
   **NOTE**: if you use this gem with Devise you should use `:openid_connect` name,
   or Devise would route to 'users/auth/:provider' rather than 'users/auth/openid_connect'
 
-  * Although `response_type` is an available option, currently, only `:code`
-  is valid. There are plans to bring in implicit flow and hybrid flow at some
-  point, but it hasn't come up yet for me. Those flows aren't best practive for
-  server side web apps anyway and are designed more for native/mobile apps.
-  * If you want to pass `state` paramete by yourself. You can set Proc Object.  
+  * `response_type` tells the authorization server which grant type the application wants to use,
+  currently, only `:code` (Authorization Code grant) and `:id_token` (Implicit grant) are valid.
+  There are plans to bring in hybrid flow at some point, but it hasn't come up yet for us.
+  Those flows aren't best practive for server side web apps anyway and are designed more for native/mobile apps.
+  * If you want to pass `state` paramete by yourself. You can set Proc Object.
   e.g. `state: Proc.new { SecureRandom.hex(32) }`
   * `nonce` is optional. If don't want to pass "nonce" parameter to provider, You should specify
   `false` to `send_nonce` option. (default true)
@@ -60,8 +60,8 @@ Configuration details:
   `:client_auth_method` option, automatically set `:basic`.
   * Use "OpenID Connect Discovery", You should specify `true` to `discovery` option. (default false)
   * In "OpenID Connect Discovery", generally provider should have Webfinger endpoint.
-  If provider does not have Webfinger endpoint, You can specify "Issuer" to option.  
-  e.g. `issuer: "https://myprovider.com"`  
+  If provider does not have Webfinger endpoint, You can specify "Issuer" to option.
+  e.g. `issuer: "https://myprovider.com"`
   It means to get configuration from "https://myprovider.com/.well-known/openid-configuration".
   * The uid is by default using the `sub` value from the `user_info` response,
   which in some applications is not the expected value. To avoid such limitations, the uid label can be
