@@ -11,7 +11,7 @@ Gem::Specification.new do |spec|
   spec.email         = ['jjbohn@gmail.com', 'm0n9oose@gmail.com']
   spec.summary       = 'OpenID Connect Strategy for OmniAuth'
   spec.description   = 'OpenID Connect Strategy for OmniAuth.'
-  spec.homepage      = 'https://github.com/jjbohn/omniauth-openid-connect'
+  spec.homepage      = 'https://github.com/m0n9oose/omniauth_openid_connect'
   spec.license       = 'MIT'
 
   spec.files         = `git ls-files -z`.split("\x0")
