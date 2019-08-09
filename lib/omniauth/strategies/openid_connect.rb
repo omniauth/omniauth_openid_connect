@@ -14,6 +14,11 @@ module OmniAuth
       include OmniAuth::Strategy
       extend Forwardable
 
+      RESPONSE_TYPE_EXCEPTIONS = {
+        'id_token' => { exception_class: OmniAuth::OpenIDConnect::MissingIdTokenError, key: :missing_id_token }.freeze,
+        'code' => { exception_class: OmniAuth::OpenIDConnect::MissingCodeError, key: :missing_code }.freeze,
+      }.freeze
+
       def_delegator :request, :params
 
       option :name, 'openid_connect'
@@ -109,8 +114,7 @@ module OmniAuth
 
         raise CallbackError, 'Invalid state parameter' if invalid_state
 
-        return fail!(:missing_code, OmniAuth::OpenIDConnect::MissingCodeError.new(params['error'])) unless valid_response_type?('code')
-        return fail!(:missing_id_token, OmniAuth::OpenIDConnect::MissingIdTokenError.new(params['error'])) unless valid_response_type?('id_token')
+        return unless valid_response_type?
 
         options.issuer = issuer if options.issuer.nil? || options.issuer.empty?
 
@@ -308,9 +312,13 @@ module OmniAuth
         call_app!
       end
 
-      def valid_response_type?(type)
-        # pass if configured response_type is different than tested here
-        options.response_type == type.to_s ? params.key?(type) : true
+      def valid_response_type?
+        return true if params.key?(options.response_type)
+
+        error_attrs = RESPONSE_TYPE_EXCEPTIONS[options.response_type]
+        fail!(error_attrs[:key], error_attrs[:exception_class].new(params['error']))
+
+        false
       end
 
       class CallbackError < StandardError
