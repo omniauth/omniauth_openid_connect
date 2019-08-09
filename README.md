@@ -50,8 +50,6 @@ Configuration details:
 
   * `response_type` tells the authorization server which grant type the application wants to use,
   currently, only `:code` (Authorization Code grant) and `:id_token` (Implicit grant) are valid.
-  There are plans to bring in hybrid flow at some point, but it hasn't come up yet for us.
-  Those flows aren't best practive for server side web apps anyway and are designed more for native/mobile apps.
   * If you want to pass `state` paramete by yourself. You can set Proc Object.
   e.g. `state: Proc.new { SecureRandom.hex(32) }`
   * `nonce` is optional. If don't want to pass "nonce" parameter to provider, You should specify
