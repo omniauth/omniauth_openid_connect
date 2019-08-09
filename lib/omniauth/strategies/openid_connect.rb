@@ -14,6 +14,11 @@ module OmniAuth
       include OmniAuth::Strategy
       extend Forwardable
 
+      RESPONSE_TYPE_EXCEPTIONS = {
+        'id_token' => { exception_class: OmniAuth::OpenIDConnect::MissingIdTokenError, key: :missing_id_token }.freeze,
+        'code' => { exception_class: OmniAuth::OpenIDConnect::MissingCodeError, key: :missing_code }.freeze,
+      }.freeze
+
       def_delegator :request, :params
 
       option :name, 'openid_connect'
@@ -35,7 +40,7 @@ module OmniAuth
       option :client_jwk_signing_key
       option :client_x509_signing_key
       option :scope, [:openid]
-      option :response_type, 'code'
+      option :response_type, 'code' # ['code', 'id_token']
       option :state
       option :response_mode # [:query, :fragment, :form_post, :web_message]
       option :display, nil # [:page, :popup, :touch, :wap]
@@ -109,7 +114,7 @@ module OmniAuth
 
         raise CallbackError, 'Invalid state parameter' if invalid_state
 
-        return fail!(:missing_code, OmniAuth::OpenIDConnect::MissingCodeError.new(params['error'])) unless params['code']
+        return unless valid_response_type?
 
         options.issuer = issuer if options.issuer.nil? || options.issuer.empty?
 
@@ -120,6 +125,9 @@ module OmniAuth
 
         discover!
         client.redirect_uri = redirect_uri
+
+        return id_token_callback_phase if options.response_type.to_s == 'id_token'
+
         client.authorization_code = authorization_code
         access_token
         super
@@ -292,6 +300,25 @@ module OmniAuth
 
       def logout_path_pattern
         @logout_path_pattern ||= %r{\A#{Regexp.quote(request_path)}(/logout)}
+      end
+
+      def id_token_callback_phase
+        user_data = decode_id_token(params['id_token']).raw_attributes
+        env['omniauth.auth'] = AuthHash.new(
+          provider: name,
+          uid: user_data['sub'],
+          info: { name: user_data['name'], email: user_data['email'] }
+        )
+        call_app!
+      end
+
+      def valid_response_type?
+        return true if params.key?(options.response_type)
+
+        error_attrs = RESPONSE_TYPE_EXCEPTIONS[options.response_type]
+        fail!(error_attrs[:key], error_attrs[:exception_class].new(params['error']))
+
+        false
       end
 
       class CallbackError < StandardError
