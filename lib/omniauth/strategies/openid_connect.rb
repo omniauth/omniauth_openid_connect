@@ -118,10 +118,7 @@ module OmniAuth
 
         options.issuer = issuer if options.issuer.nil? || options.issuer.empty?
 
-        decode_id_token(params['id_token'])
-          .verify! issuer: options.issuer,
-                   client_id: client_options.identifier,
-                   nonce: stored_nonce
+        verify_id_token(params['id_token']) if id_token_response?
 
         discover!
         client.redirect_uri = redirect_uri
@@ -184,6 +181,14 @@ module OmniAuth
       end
 
       private
+
+      def id_token_response?
+        if options.response_type.is_a?(Array)
+          options.response_type.include?(:id_token) || options.response_type.include?('id_token')
+        else
+          options.response_type.to_s == 'id_token'
+        end
+      end
 
       def issuer
         resource = "#{ client_options.scheme }://#{ client_options.host }"
@@ -319,6 +324,13 @@ module OmniAuth
         fail!(error_attrs[:key], error_attrs[:exception_class].new(params['error']))
 
         false
+      end
+
+      def verify_id_token(id_token)
+        decode_id_token(id_token)
+          .verify! issuer: options.issuer,
+                   client_id: client_options.identifier,
+                   nonce: stored_nonce
       end
 
       class CallbackError < StandardError
