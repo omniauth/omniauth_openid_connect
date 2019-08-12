@@ -156,11 +156,6 @@ module OmniAuth
         strategy.options.client_jwk_signing_key = File.read('test/fixtures/jwks.json')
         strategy.options.response_type = :code
 
-        id_token = stub('OpenIDConnect::ResponseObject::IdToken')
-        id_token.stubs(:verify!).with(issuer: strategy.options.issuer, client_id: @identifier, nonce: nonce).returns(true)
-        ::OpenIDConnect::ResponseObject::IdToken.stubs(:decode).returns(id_token)
-        id_token.expects(:verify!)
-
         strategy.unstub(:user_info)
         access_token = stub('OpenIDConnect::AccessToken')
         access_token.stubs(:access_token)

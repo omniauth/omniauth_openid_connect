@@ -116,12 +116,9 @@ module OmniAuth
 
         return unless valid_response_type?
 
-        options.issuer = issuer if options.issuer.nil? || options.issuer.empty?
+        options.issuer = issuer if options.issuer.to_s.empty?
 
-        decode_id_token(params['id_token'])
-          .verify! issuer: options.issuer,
-                   client_id: client_options.identifier,
-                   nonce: stored_nonce
+        verify_id_token! if id_token_response?
 
         discover!
         client.redirect_uri = redirect_uri
@@ -323,6 +320,17 @@ module OmniAuth
 
       def response_type
         @response_type ||= options.response_type.to_s
+      end
+
+      def id_token_response?
+        Array(response_type).include?('id_token')
+      end
+
+      def verify_id_token!
+        decode_id_token(params['id_token'])
+          .verify!(issuer: options.issuer,
+                   client_id: client_options.identifier,
+                   nonce: stored_nonce)
       end
 
       class CallbackError < StandardError
