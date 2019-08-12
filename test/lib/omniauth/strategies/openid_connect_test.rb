@@ -123,6 +123,17 @@ module OmniAuth
         strategy.request_phase
       end
 
+      def test_request_phase_with_response_mode_symbol
+        expected_redirect = /^https:\/\/example\.com\/authorize\?client_id=1234&nonce=\w{32}&response_mode=form_post&response_type=id_token&scope=openid&state=\w{32}$/
+        strategy.options.issuer = 'example.com'
+        strategy.options.response_mode = 'form_post'
+        strategy.options.response_type = :id_token
+        strategy.options.client_options.host = 'example.com'
+
+        strategy.expects(:redirect).with(regexp_matches(expected_redirect))
+        strategy.request_phase
+      end
+
       def test_uid
         assert_equal user_info.sub, strategy.uid
 
@@ -247,6 +258,19 @@ module OmniAuth
         request.stubs(:params).returns('state' => state)
         request.stubs(:path_info).returns('')
         strategy.options.response_type = 'id_token'
+
+        strategy.call!('rack.session' => { 'omniauth.state' => state, 'omniauth.nonce' => nonce })
+
+        strategy.expects(:fail!).with(:missing_id_token, is_a(OmniAuth::OpenIDConnect::MissingIdTokenError))
+        strategy.callback_phase
+      end
+
+      def test_callback_phase_without_id_token_symbol
+        state = SecureRandom.hex(16)
+        nonce = SecureRandom.hex(16)
+        request.stubs(:params).returns('state' => state)
+        request.stubs(:path_info).returns('')
+        strategy.options.response_type = :id_token
 
         strategy.call!('rack.session' => { 'omniauth.state' => state, 'omniauth.nonce' => nonce })
 
