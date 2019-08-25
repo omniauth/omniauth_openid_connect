@@ -156,11 +156,6 @@ module OmniAuth
         strategy.options.client_jwk_signing_key = File.read('test/fixtures/jwks.json')
         strategy.options.response_type = :code
 
-        id_token = stub('OpenIDConnect::ResponseObject::IdToken')
-        id_token.stubs(:verify!).with(issuer: strategy.options.issuer, client_id: @identifier, nonce: nonce).returns(true)
-        ::OpenIDConnect::ResponseObject::IdToken.stubs(:decode).returns(id_token)
-        id_token.expects(:verify!)
-
         strategy.unstub(:user_info)
         access_token = stub('OpenIDConnect::AccessToken')
         access_token.stubs(:access_token)
@@ -276,6 +271,32 @@ module OmniAuth
         strategy.call!('rack.session' => { 'omniauth.state' => state, 'omniauth.nonce' => nonce })
 
         strategy.expects(:fail!).with(:missing_id_token, is_a(OmniAuth::OpenIDConnect::MissingIdTokenError))
+        strategy.callback_phase
+      end
+
+      def test_callback_phase_without_id_token_array
+        state = SecureRandom.hex(16)
+        nonce = SecureRandom.hex(16)
+        request.stubs(:params).returns('state' => state)
+        request.stubs(:path_info).returns('')
+        strategy.options.response_type = ['id_token']
+
+        strategy.call!('rack.session' => { 'omniauth.state' => state, 'omniauth.nonce' => nonce })
+
+        strategy.expects(:fail!).with(:missing_id_token, is_a(OmniAuth::OpenIDConnect::MissingIdTokenError))
+        strategy.callback_phase
+      end
+
+      def test_callback_phase_without_code_and_id_token_array
+        state = SecureRandom.hex(16)
+        nonce = SecureRandom.hex(16)
+        request.stubs(:params).returns('state' => state, 'id_token' => 'id_token')
+        request.stubs(:path_info).returns('')
+        strategy.options.response_type = ['id_token', 'code']
+
+        strategy.call!('rack.session' => { 'omniauth.state' => state, 'omniauth.nonce' => nonce })
+
+        strategy.expects(:fail!).with(:missing_code, is_a(OmniAuth::OpenIDConnect::MissingCodeError))
         strategy.callback_phase
       end
 

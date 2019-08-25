@@ -118,15 +118,12 @@ module OmniAuth
 
         options.issuer = issuer if options.issuer.nil? || options.issuer.empty?
 
-        decode_id_token(params['id_token'])
-          .verify! issuer: options.issuer,
-                   client_id: client_options.identifier,
-                   nonce: stored_nonce
+        verify_id_token if configured_response_type?(:id_token)
 
         discover!
         client.redirect_uri = redirect_uri
 
-        return id_token_callback_phase if configured_response_type == 'id_token'
+        return id_token_callback_phase if configured_response_type?(:id_token)
 
         client.authorization_code = authorization_code
         access_token
@@ -184,6 +181,14 @@ module OmniAuth
       end
 
       private
+
+      def configured_response_type?(type)
+        if options.response_type.is_a?(Array)
+          options.response_type.include?(type.to_s) || options.response_type.include?(type.to_sym)
+        else
+          options.response_type.to_s == type.to_s
+        end
+      end
 
       def issuer
         resource = "#{ client_options.scheme }://#{ client_options.host }"
@@ -313,16 +318,23 @@ module OmniAuth
       end
 
       def valid_response_type?
-        return true if params.key?(configured_response_type)
+        Array(options.response_type).each do |response_type|
+          next if params[response_type.to_s]
 
-        error_attrs = RESPONSE_TYPE_EXCEPTIONS[configured_response_type]
-        fail!(error_attrs[:key], error_attrs[:exception_class].new(params['error']))
+          error_attrs = RESPONSE_TYPE_EXCEPTIONS[response_type.to_s]
+          fail!(error_attrs[:key], error_attrs[:exception_class].new(params['error']))
 
-        false
+          return false
+        end
+
+        true
       end
 
-      def configured_response_type
-        @configured_response_type ||= options.response_type.to_s
+      def verify_id_token
+        decode_id_token(params['id_token'])
+          .verify! issuer: options.issuer,
+                   client_id: client_options.identifier,
+                   nonce: stored_nonce
       end
 
       class CallbackError < StandardError
