@@ -154,6 +154,7 @@ module OmniAuth
         strategy.options.issuer = 'example.com'
         strategy.options.client_signing_alg = :RS256
         strategy.options.client_jwk_signing_key = File.read('test/fixtures/jwks.json')
+        strategy.options.response_type = :code
 
         id_token = stub('OpenIDConnect::ResponseObject::IdToken')
         id_token.stubs(:verify!).with(issuer: strategy.options.issuer, client_id: @identifier, nonce: nonce).returns(true)
@@ -528,6 +529,39 @@ module OmniAuth
         strategy.options.client_options.secret = 'secret'
         strategy.options.client_signing_alg = :HS256
         assert_equal strategy.options.client_options.secret, strategy.public_key
+      end
+
+      def test_id_token_auth_hash
+        state = SecureRandom.hex(16)
+        nonce = SecureRandom.hex(16)
+        strategy.options.response_type = 'id_token'
+        strategy.options.issuer = 'example.com'
+
+        id_token = stub('OpenIDConnect::ResponseObject::IdToken')
+        id_token.stubs(:verify!).returns(true)
+        id_token.stubs(:raw_attributes, :to_h).returns( 
+          {
+            "iss": "http://server.example.com",
+            "sub": "248289761001",
+            "aud": "s6BhdRkqt3",
+            "nonce": "n-0S6_WzA2Mj",
+            "exp": 1311281970,
+            "iat": 1311280970,
+          }
+        )
+
+        strategy.stubs(:decode_id_token).returns(id_token)
+        request.stubs(:params).returns('state' => state, 'nounce' => nonce, 'id_token' => id_token)
+        strategy.stubs(:stored_state).returns(state)
+
+        strategy.callback_phase
+
+        auth_hash = strategy.send(:env).deep_symbolize_keys[:'omniauth.auth']
+        assert auth_hash.key?(:provider)
+        assert auth_hash.key?(:uid)
+        assert auth_hash.key?(:info)
+        assert auth_hash.key?(:extra)
+        assert auth_hash[:extra].key?(:raw_info)
       end
     end
   end
