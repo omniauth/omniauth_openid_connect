@@ -111,7 +111,6 @@ module OmniAuth
         invalid_state = params['state'].to_s.empty? || params['state'] != stored_state
 
         raise CallbackError.new(params['error'], error_description, params['error_uri']) if error
-
         raise CallbackError, 'Invalid state parameter' if invalid_state
 
         return unless valid_response_type?
@@ -126,7 +125,7 @@ module OmniAuth
         discover!
         client.redirect_uri = redirect_uri
 
-        return id_token_callback_phase if options.response_type.to_s == 'id_token'
+        return id_token_callback_phase if configured_response_type == 'id_token'
 
         client.authorization_code = authorization_code
         access_token
@@ -307,18 +306,23 @@ module OmniAuth
         env['omniauth.auth'] = AuthHash.new(
           provider: name,
           uid: user_data['sub'],
-          info: { name: user_data['name'], email: user_data['email'] }
+          info: { name: user_data['name'], email: user_data['email'] },
+          extra: { raw_info: user_data }
         )
         call_app!
       end
 
       def valid_response_type?
-        return true if params.key?(options.response_type)
+        return true if params.key?(configured_response_type)
 
-        error_attrs = RESPONSE_TYPE_EXCEPTIONS[options.response_type.to_s]
+        error_attrs = RESPONSE_TYPE_EXCEPTIONS[configured_response_type]
         fail!(error_attrs[:key], error_attrs[:exception_class].new(params['error']))
 
         false
+      end
+
+      def configured_response_type
+        @configured_response_type ||= options.response_type.to_s
       end
 
       class CallbackError < StandardError
