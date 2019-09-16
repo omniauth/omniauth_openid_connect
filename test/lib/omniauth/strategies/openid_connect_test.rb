@@ -454,7 +454,8 @@ module OmniAuth
 
       def test_dynamic_state
         # Stub request parameters
-        Strategy.send(:define_method, 'env', -> { { QUERY_STRING: { state: 'abc', client_id: '123' } } })
+        request.stubs(:path_info).returns('')
+        strategy.call!('rack.session' => { }, QUERY_STRING: { state: 'abc', client_id: '123' } )
 
         strategy.options.state = lambda { |env|
           # Get params from request, e.g. CGI.parse(env['QUERY_STRING'])
@@ -529,6 +530,42 @@ module OmniAuth
         strategy.options.client_options.secret = 'secret'
         strategy.options.client_signing_alg = :HS256
         assert_equal strategy.options.client_options.secret, strategy.public_key
+      end
+
+      def test_id_token_auth_hash
+        state = SecureRandom.hex(16)
+        nonce = SecureRandom.hex(16)
+        strategy.options.response_type = 'id_token'
+        strategy.options.issuer = 'example.com'
+
+        id_token = stub('OpenIDConnect::ResponseObject::IdToken')
+        id_token.stubs(:verify!).returns(true)
+        id_token.stubs(:raw_attributes, :to_h).returns( 
+          {
+            "iss": "http://server.example.com",
+            "sub": "248289761001",
+            "aud": "s6BhdRkqt3",
+            "nonce": "n-0S6_WzA2Mj",
+            "exp": 1311281970,
+            "iat": 1311280970,
+          }
+        )
+
+        request.stubs(:params).returns('state' => state, 'nounce' => nonce, 'id_token' => id_token)
+        request.stubs(:path_info).returns('')
+
+        strategy.stubs(:decode_id_token).returns(id_token)
+        strategy.stubs(:stored_state).returns(state)
+
+        strategy.call!('rack.session' => { 'omniauth.state' => state, 'omniauth.nonce' => nonce })
+        strategy.callback_phase
+
+        auth_hash = strategy.send(:env)['omniauth.auth']
+        assert auth_hash.key?('provider')
+        assert auth_hash.key?('uid')
+        assert auth_hash.key?('info')
+        assert auth_hash.key?('extra')
+        assert auth_hash['extra'].key?('raw_info')
       end
     end
   end
