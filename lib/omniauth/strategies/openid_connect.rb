@@ -172,6 +172,7 @@ module OmniAuth
           prompt: options.prompt,
           nonce: (new_nonce if options.send_nonce),
           hd: options.hd,
+          acr_values: options.acr_values,
         }
         client.authorization_uri(opts.reject { |_k, v| v.nil? })
       end
