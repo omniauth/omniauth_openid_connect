@@ -1,3 +1,13 @@
+# v0.3.3 (09.11.2019)
+
+- Pass `acr_values` to authorize url [#43](https://github.com/m0n9oose/omniauth_openid_connect/pull/43)
+- Add raw info for id token [#42](https://github.com/m0n9oose/omniauth_openid_connect/pull/42)
+- Fixed `id_token` verification when `id_token` is not used [#41](https://github.com/m0n9oose/omniauth_openid_connect/pull/41)
+- Cast `response_type` to string when checking if it is set in params [#36](https://github.com/m0n9oose/omniauth_openid_connect/pull/36)
+- Support both symbol and string version of `response_type` option [#35](https://github.com/m0n9oose/omniauth_openid_connect/pull/35)
+- Fix gemspec homepage [#33](https://github.com/m0n9oose/omniauth_openid_connect/pull/33)
+- Add support for `response_type` `id_token` [#32](https://github.com/m0n9oose/omniauth_openid_connect/pull/32)
+
 # v0.3.2 (03.08.2019)
 
 - Use response_mode in `authorize_uri` if the option is defined [#30](https://github.com/m0n9oose/omniauth_openid_connect/pull/30)
