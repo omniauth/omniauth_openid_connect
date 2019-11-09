@@ -134,6 +134,15 @@ module OmniAuth
         strategy.request_phase
       end
 
+      def test_option_acr_values
+        strategy.options.client_options[:host] = 'foobar.com'
+
+        assert(!(strategy.authorize_uri =~ /acr_values=/), 'URI must not contain acr_values')
+
+        strategy.options.acr_values = 'urn:some:acr:values:value'
+        assert(strategy.authorize_uri =~ /acr_values=/, 'URI must contain acr_values')
+      end
+
       def test_uid
         assert_equal user_info.sub, strategy.uid
 
