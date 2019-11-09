@@ -156,11 +156,6 @@ module OmniAuth
         strategy.options.client_jwk_signing_key = File.read('test/fixtures/jwks.json')
         strategy.options.response_type = :code
 
-        id_token = stub('OpenIDConnect::ResponseObject::IdToken')
-        id_token.stubs(:verify!).with(issuer: strategy.options.issuer, client_id: @identifier, nonce: nonce).returns(true)
-        ::OpenIDConnect::ResponseObject::IdToken.stubs(:decode).returns(id_token)
-        id_token.expects(:verify!)
-
         strategy.unstub(:user_info)
         access_token = stub('OpenIDConnect::AccessToken')
         access_token.stubs(:access_token)
@@ -170,6 +165,36 @@ module OmniAuth
         access_token.stubs(:id_token).returns(File.read('test/fixtures/id_token.txt'))
         client.expects(:access_token!).at_least_once.returns(access_token)
         access_token.expects(:userinfo!).returns(user_info)
+
+        strategy.call!('rack.session' => { 'omniauth.state' => state, 'omniauth.nonce' => nonce })
+        strategy.callback_phase
+      end
+
+      def test_callback_phase_with_id_token
+        code = SecureRandom.hex(16)
+        state = SecureRandom.hex(16)
+        nonce = SecureRandom.hex(16)
+        request.stubs(:params).returns('id_token' => code, 'state' => state)
+        request.stubs(:path_info).returns('')
+
+        strategy.options.issuer = 'example.com'
+        strategy.options.client_signing_alg = :RS256
+        strategy.options.client_jwk_signing_key = File.read('test/fixtures/jwks.json')
+        strategy.options.response_type = 'id_token'
+
+        strategy.unstub(:user_info)
+        access_token = stub('OpenIDConnect::AccessToken')
+        access_token.stubs(:access_token)
+        access_token.stubs(:refresh_token)
+        access_token.stubs(:expires_in)
+        access_token.stubs(:scope)
+        access_token.stubs(:id_token).returns(File.read('test/fixtures/id_token.txt'))
+
+        id_token = stub('OpenIDConnect::ResponseObject::IdToken')
+        id_token.stubs(:raw_attributes).returns('sub' => 'sub', 'name' => 'name', 'email' => 'email')
+        id_token.stubs(:verify!).with(issuer: strategy.options.issuer, client_id: @identifier, nonce: nonce).returns(true)
+        ::OpenIDConnect::ResponseObject::IdToken.stubs(:decode).returns(id_token)
+        id_token.expects(:verify!)
 
         strategy.call!('rack.session' => { 'omniauth.state' => state, 'omniauth.nonce' => nonce })
         strategy.callback_phase
