@@ -135,7 +135,7 @@ module OmniAuth
       end
 
       def other_phase
-        if logout_path_pattern.match?(current_path)
+        if !!logout_path_pattern.match(current_path)
           options.issuer = issuer if options.issuer.to_s.empty?
           discover!
           return redirect(end_session_uri) if end_session_uri
