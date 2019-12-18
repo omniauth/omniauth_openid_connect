@@ -108,7 +108,7 @@ module OmniAuth
       def callback_phase
         error = params['error_reason'] || params['error']
         error_description = params['error_description'] || params['error_reason']
-        invalid_state = params['state'].to_s.empty? || params['state'] != stored_state
+        invalid_state = session['omniauth.state'] && (params['state'].to_s.empty? || params['state'] != stored_state)
 
         raise CallbackError.new(params['error'], error_description, params['error_uri']) if error
         raise CallbackError, 'Invalid state parameter' if invalid_state
