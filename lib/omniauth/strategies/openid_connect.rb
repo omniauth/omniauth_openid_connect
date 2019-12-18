@@ -126,8 +126,10 @@ module OmniAuth
         client.authorization_code = authorization_code
         access_token
         super
-      rescue CallbackError, ::Rack::OAuth2::Client::Error => e
-        fail!(:invalid_credentials, e)
+      rescue CallbackError => e
+        fail!(e.error, e)
+      rescue ::Rack::OAuth2::Client::Error => e
+        fail!(e.response[:error], e)
       rescue ::Timeout::Error, ::Errno::ETIMEDOUT => e
         fail!(:timeout, e)
       rescue ::SocketError => e
