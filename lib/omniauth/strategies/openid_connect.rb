@@ -111,7 +111,7 @@ module OmniAuth
         invalid_state = params['state'].to_s.empty? || params['state'] != stored_state
 
         raise CallbackError.new(params['error'], error_description, params['error_uri']) if error
-        raise CallbackError, 'Invalid state parameter' if invalid_state
+        raise CallbackError.new(:csrf_detected, "Invalid 'state' parameter") if invalid_state
 
         return unless valid_response_type?
 
