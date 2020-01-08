@@ -54,6 +54,7 @@ module OmniAuth
       option :send_scope_to_token_endpoint, true
       option :client_auth_method
       option :post_logout_redirect_uri
+      option :extra_authorize_params, {}
       option :uid_field, 'sub'
 
       def uid
@@ -170,6 +171,11 @@ module OmniAuth
           hd: options.hd,
           acr_values: options.acr_values,
         }
+
+        unless options.extra_authorize_params.empty?
+          opts.merge!(options.extra_authorize_params)
+        end
+
         client.authorization_uri(opts.reject { |_k, v| v.nil? })
       end
 
