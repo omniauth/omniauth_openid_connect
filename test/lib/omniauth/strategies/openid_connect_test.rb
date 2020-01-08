@@ -143,6 +143,13 @@ module OmniAuth
         assert(strategy.authorize_uri =~ /acr_values=/, 'URI must contain acr_values')
       end
 
+      def test_option_custom_attributes
+        strategy.options.client_options[:host] = 'foobar.com'
+        strategy.options.extra_authorize_params = {resource: 'xyz'}
+
+        assert(strategy.authorize_uri =~ /resource=xyz/, 'URI must contain custom params')
+      end
+
       def test_uid
         assert_equal user_info.sub, strategy.uid
 
