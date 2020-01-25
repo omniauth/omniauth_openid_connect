@@ -163,7 +163,7 @@ module OmniAuth
         strategy.options.issuer = 'example.com'
         strategy.options.client_signing_alg = :RS256
         strategy.options.client_jwk_signing_key = File.read('test/fixtures/jwks.json')
-        strategy.options.response_type = :code
+        strategy.options.response_type = 'code'
 
         strategy.unstub(:user_info)
         access_token = stub('OpenIDConnect::AccessToken')
@@ -174,6 +174,12 @@ module OmniAuth
         access_token.stubs(:id_token).returns(File.read('test/fixtures/id_token.txt'))
         client.expects(:access_token!).at_least_once.returns(access_token)
         access_token.expects(:userinfo!).returns(user_info)
+
+        id_token = stub('OpenIDConnect::ResponseObject::IdToken')
+        id_token.stubs(:raw_attributes).returns('sub' => 'sub', 'name' => 'name', 'email' => 'email')
+        id_token.stubs(:verify!).with(issuer: strategy.options.issuer, client_id: @identifier, nonce: nonce).returns(true)
+        ::OpenIDConnect::ResponseObject::IdToken.stubs(:decode).returns(id_token)
+        id_token.expects(:verify!)
 
         strategy.call!('rack.session' => { 'omniauth.state' => state, 'omniauth.nonce' => nonce })
         strategy.callback_phase

@@ -117,7 +117,7 @@ module OmniAuth
 
         options.issuer = issuer if options.issuer.nil? || options.issuer.empty?
 
-        verify_id_token!
+        verify_id_token!(params['id_token']) if configured_response_type == 'id_token'
         discover!
         client.redirect_uri = redirect_uri
 
@@ -202,10 +202,16 @@ module OmniAuth
       end
 
       def access_token
-        @access_token ||= client.access_token!(
+        return @access_token if @access_token
+
+        @access_token = client.access_token!(
           scope: (options.scope if options.send_scope_to_token_endpoint),
           client_auth_method: options.client_auth_method
         )
+
+        verify_id_token!(decode_id_token(@access_token.id_token)) if configured_response_type == 'code'
+
+        @access_token
       end
 
       def decode_id_token(id_token)
@@ -320,12 +326,10 @@ module OmniAuth
         @configured_response_type ||= options.response_type.to_s
       end
 
-      def verify_id_token!
-        return unless configured_response_type == 'id_token'
-
-        decode_id_token(params['id_token']).verify!(issuer: options.issuer,
-                                                    client_id: client_options.identifier,
-                                                    nonce: stored_nonce)
+      def verify_id_token!(id_token)
+        decode_id_token(id_token).verify!(issuer: options.issuer,
+                                          client_id: client_options.identifier,
+                                          nonce: stored_nonce)
       end
 
       class CallbackError < StandardError
