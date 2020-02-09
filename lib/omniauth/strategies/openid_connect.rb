@@ -111,8 +111,8 @@ module OmniAuth
         error_description = params['error_description'] || params['error_reason']
         invalid_state = params['state'].to_s.empty? || params['state'] != stored_state
 
-        raise CallbackError.new(params['error'], error_description, params['error_uri']) if error
-        raise CallbackError, 'Invalid state parameter' if invalid_state
+        raise CallbackError, error: params['error'], reason: error_description, uri: params['error_uri'] if error
+        raise CallbackError, error: :csrf_detected, reason: "Invalid 'state' parameter" if invalid_state
 
         return unless valid_response_type?
 
@@ -127,8 +127,10 @@ module OmniAuth
         client.authorization_code = authorization_code
         access_token
         super
-      rescue CallbackError, ::Rack::OAuth2::Client::Error => e
-        fail!(:invalid_credentials, e)
+      rescue CallbackError => e
+        fail!(e.error, e)
+      rescue ::Rack::OAuth2::Client::Error => e
+        fail!(e.response[:error], e)
       rescue ::Timeout::Error, ::Errno::ETIMEDOUT => e
         fail!(:timeout, e)
       rescue ::SocketError => e
@@ -341,10 +343,10 @@ module OmniAuth
       class CallbackError < StandardError
         attr_accessor :error, :error_reason, :error_uri
 
-        def initialize(error, error_reason = nil, error_uri = nil)
-          self.error = error
-          self.error_reason = error_reason
-          self.error_uri = error_uri
+        def initialize(data)
+          self.error = data[:error]
+          self.error_reason = data[:reason]
+          self.error_uri = data[:uri]
         end
 
         def message
