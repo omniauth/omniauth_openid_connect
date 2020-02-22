@@ -71,6 +71,10 @@ Configuration details:
   that appears in the `user_info` details.
   * The `issuer` property should exactly match the provider's issuer link.
   * The `response_mode` option is optional and specifies how the result of the authorization request is formatted.
+  * Some OpenID Connect providers require the `scope` attribute in requests to the token endpoint, even if
+  this is not in the protocol specifications. In those cases, the `send_scope_to_token_endpoint`
+  property can be used to add the attribute to the token request. Initial value is `true`, which means that the
+  scope attribute is included by default.
 
 For the full low down on OpenID Connect, please check out
 [the spec](http://openid.net/specs/openid-connect-core-1_0.html).
