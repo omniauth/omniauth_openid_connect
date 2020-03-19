@@ -72,6 +72,26 @@ Configuration details:
   * The `issuer` property should exactly match the provider's issuer link.
   * The `response_mode` option is optional and specifies how the result of the authorization request is formatted.
 
+## Options
+
+| Field                        | Description                                                                                                                                                   | Required | Default                    | Example/Options                                     |
+|------------------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------|----------|----------------------------|-----------------------------------------------------|
+| name                         | Arbitrary string to identify connection and identify it from other openid_connect providers                                                                                                                        | no       | String: openid_connect     | :my_idp                                             |
+| issuer                       | Root url for the authorization server                                                                                                                         | yes      |                            | https://myprovider.com                              |
+| discovery                    | Should OpenID discovery be used. This is recommended if the IDP provides a discovery endpoint. See client config for how to manually enter discovered values. | no       | false                      | one of: true, false                                 |
+| client_auth_method           | Which authentication method to use to authenticate your app with the authorization server                                                                     | no       | Sym: basic                 | "basic", "jwks"                                     |
+| scope                        | Which OpenID scopes to include (:openid is always required)                                                                                                   | no       | Array<sym> [:openid]       | [:openid, :profile, :email]                         |
+| response_type                | Which OAuth2 response type to use with the authorization request                                                                                              | no       | String: code               | one of: 'code', 'id_token'                          |
+| state                        | A value to be used for the OAuth2 state parameter on the authorization request. Can be a proc that generates a string.                                        | no       | Random 16 character string | Proc.new { SecureRandom.hex(32) }                   |
+| response_mode                | The response mode per [spec](https://openid.net/specs/oauth-v2-form-post-response-mode-1_0.html)                                                              | no       | nil                        | one of: :query, :fragment, :form_post, :web_message |
+| display                      | An optional parameter to the authorization request to determine how the authorization and consent page                                                        | no       | nil                        | one of: :page, :popup, :touch, :wap                 |
+| prompt                       | An optional parameter to the authrization request to determine what pages the user will be shown                                                              | no       | nil                        | one of: :none, :login, :consent, :select_account    |
+| send_scope_to_token_endpoint | Should the scope parameter be sent to the authorization token endpoint?                                                                                       | no       | true                       | one of: true, false                                 |
+| post_logout_redirect_uri     | The logout redirect uri to use per the [session management draft](https://openid.net/specs/openid-connect-session-1_0.html)                                   | no       | empty                      | https://myapp.com/logout/callback                   |
+| uid_field                    | The field of the user info response to be used as a unique id                                                                                                 | no       | 'sub'                      | "sub", "preferred_username"                         |
+| client_options               | A hash of client options detailed in its own section                                                                                                          | yes      |                            |                                                     |
+
+You can now import Markdown table code directly using File/Paste table data... dialog. 
 For the full low down on OpenID Connect, please check out
 [the spec](http://openid.net/specs/openid-connect-core-1_0.html).
 
