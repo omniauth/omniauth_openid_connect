@@ -44,7 +44,44 @@ config.omniauth :openid_connect, {
 }
 ```
 
-Configuration details:
+### Options Overview
+
+| Field                        | Description                                                                                                                                                   | Required | Default                    | Example/Options                                     |
+|------------------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------|----------|----------------------------|-----------------------------------------------------|
+| name                         | Arbitrary string to identify connection and identify it from other openid_connect providers                                                                                                                        | no       | String: openid_connect     | :my_idp                                             |
+| issuer                       | Root url for the authorization server                                                                                                                         | yes      |                            | https://myprovider.com                              |
+| discovery                    | Should OpenID discovery be used. This is recommended if the IDP provides a discovery endpoint. See client config for how to manually enter discovered values. | no       | false                      | one of: true, false                                 |
+| client_auth_method           | Which authentication method to use to authenticate your app with the authorization server                                                                     | no       | Sym: basic                 | "basic", "jwks"                                     |
+| scope                        | Which OpenID scopes to include (:openid is always required)                                                                                                   | no       | Array<sym> [:openid]       | [:openid, :profile, :email]                         |
+| response_type                | Which OAuth2 response type to use with the authorization request                                                                                              | no       | String: code               | one of: 'code', 'id_token'                          |
+| state                        | A value to be used for the OAuth2 state parameter on the authorization request. Can be a proc that generates a string.                                        | no       | Random 16 character string | Proc.new { SecureRandom.hex(32) }                   |
+| response_mode                | The response mode per [spec](https://openid.net/specs/oauth-v2-form-post-response-mode-1_0.html)                                                              | no       | nil                        | one of: :query, :fragment, :form_post, :web_message |
+| display                      | An optional parameter to the authorization request to determine how the authorization and consent page                                                        | no       | nil                        | one of: :page, :popup, :touch, :wap                 |
+| prompt                       | An optional parameter to the authrization request to determine what pages the user will be shown                                                              | no       | nil                        | one of: :none, :login, :consent, :select_account    |
+| send_scope_to_token_endpoint | Should the scope parameter be sent to the authorization token endpoint?                                                                                       | no       | true                       | one of: true, false                                 |
+| post_logout_redirect_uri     | The logout redirect uri to use per the [session management draft](https://openid.net/specs/openid-connect-session-1_0.html)                                   | no       | empty                      | https://myapp.com/logout/callback                   |
+| uid_field                    | The field of the user info response to be used as a unique id                                                                                                 | no       | 'sub'                      | "sub", "preferred_username"                         |
+| client_options               | A hash of client options detailed in its own section                                                                                                          | yes      |                            |                                                     |
+
+### Client Config Options
+
+These are the configuration options for the client_options hash of the configuration.
+
+| Field                  | Description                                                     | Default    | Replaced by discovery? |
+|------------------------|-----------------------------------------------------------------|------------|------------------------|
+| identifier             | The OAuth2 client_id                                            |            |                        |
+| secret                 | The OAuth2 client secret                                        |            |                        |
+| redirect_uri           | The OAuth2 authorization callback url in your app               |            |                        |
+| scheme                 | The http scheme to use                                          | https      |                        |
+| host                   | The host of the authorization server                            | nil        |                        |
+| port                   | The port for the authorization server                           | 443        |                        |
+| authorization_endpoint | The authorize endpoint on the authorization server              | /authorize | yes                    |
+| token_endpoint         | The token endpoint on the authorization server                  | /token     | yes                    |
+| userinfo_endpoint      | The user info endpoint on the authorization server              | /userinfo  | yes                    |
+| jwks_uri               | The jwks_uri on the authorization server                        | /jwk       | yes                    |
+| end_session_endpoint   | The url to call to log the user out at the authorization server | nil        | yes                    |
+
+### Additional Configuration Notes
   * `name` is arbitrary, I recommend using the name of your provider. The name
   configuration exists because you could be using multiple OpenID Connect
   providers in a single app.
