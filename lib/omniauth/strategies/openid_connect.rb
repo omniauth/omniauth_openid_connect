@@ -58,10 +58,7 @@ module OmniAuth
       option :uid_field, 'sub'
 
       def uid
-        user_info.public_send(options.uid_field.to_s)
-      rescue NoMethodError
-        log :warn, "User sub:#{user_info.sub} missing info field: #{options.uid_field}"
-        user_info.sub
+        user_info.raw_attributes[options.uid_field.to_sym] || user_info.sub
       end
 
       info do
