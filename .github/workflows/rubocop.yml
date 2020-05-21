@@ -1,4 +1,5 @@
 name: Rubocop check
+
 on:
   pull_request:
     branches:
@@ -7,12 +8,15 @@ on:
     branches:
       - master
 jobs:
-  rubocop_check:
-    timeout-minutes: 2
+  build:
     name: RuboCop Action
     runs-on: ubuntu-latest
     steps:
-      - name: Rubocop Linter Action
-        uses: andrewmcodes/rubocop-linter-action@v3.0.0
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    - name: Checkout Action
+      uses: actions/checkout@v1
+    - name: Rubocop Linter Action
+      uses: andrewmcodes/rubocop-linter-action@v3.2.0
+      with:
+        action_config_path: '.github/config/rubocop_linter_action.yml'
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

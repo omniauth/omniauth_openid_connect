@@ -1,7 +1,7 @@
 # Description: The name of the check that will be created.
 # Valid Options: A reasonably sized string.
 # Default: 'Rubocop Action'
-# check_name: 'Rubocop Results'
+check_name: 'Rubocop Results'
 
 # Description: Versions required to run your RuboCop checks.
 # Valid options: RuboCop and any RuboCop extension, by default the latest gem version will be used. You can explicitly state that
@@ -32,17 +32,28 @@ rubocop_config_path: '.rubocop.yml'
 # Valid options: 'refactor', 'convention', 'warning', 'error', or 'fatal'.
 # Default: 'warning'
 # Resource: https://rubocop.readthedocs.io/en/stable/configuration/#severity
-rubocop_fail_level: 'warning'
+# rubocop_fail_level: 'warning'
+
+# Whether or not to use --force-exclusion when building the rubocop command. Use this if you are only linting modified
+# files and typically excluded files have been changed. For example, if you exclude db/schema.rb in your rubocop.yml
+# but a change gets made, then with the check_scope config set to 'modified' rubocop will lint db/schema.rb. If you set
+# this to true, rubocop will ignore it.
+# Valid options: true || false
+# Default: false
 
 # Instead of installing gems from rubygems, we can run `bundle install` on your project,
 # you would need to do this if you are using something like 'rubocop-github' or if you don't
 # want to list out dependencies with the `versions` key.
 # Valid options: true || false
 # Default: false
-bundle: false
+# bundle: false
 
 # The scope of code that Rubocop should lint. Use this if you only want to lint changed files. If this is not set
 # or not equal to 'modified', Rubocop is run against the entire codebase. Note that this will not work on the master branch.
 # Valid options: 'modified'
 # Default: nil
-check_scope: 'modified'
+
+# The base branch against which changes will be compared, if check_scope config is set to 'modified'.
+# This setting is not used if check_scope != 'modified'.
+# Valid options: 'origin/another_branch'
+# Default: 'origin/master'
