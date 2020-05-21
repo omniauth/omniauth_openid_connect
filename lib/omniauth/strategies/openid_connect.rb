@@ -171,9 +171,7 @@ module OmniAuth
           acr_values: options.acr_values,
         }
 
-        unless options.extra_authorize_params.empty?
-          opts.merge!(options.extra_authorize_params)
-        end
+        opts.merge!(options.extra_authorize_params) unless options.extra_authorize_params.empty?
 
         client.authorization_uri(opts.reject { |_k, v| v.nil? })
       end
