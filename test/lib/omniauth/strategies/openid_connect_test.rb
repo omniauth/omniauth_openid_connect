@@ -185,9 +185,9 @@ module OmniAuth
         id_token = stub('OpenIDConnect::ResponseObject::IdToken')
         id_token.stubs(:raw_attributes).returns('sub' => 'sub', 'name' => 'name', 'email' => 'email')
         id_token.stubs(:verify!).with(issuer: strategy.options.issuer, client_id: @identifier, nonce: nonce).returns(true)
-        ::OpenIDConnect::ResponseObject::IdToken.stubs(:decode).returns(id_token)
         id_token.expects(:verify!)
 
+        strategy.expects(:decode_id_token).with(access_token.id_token).returns(id_token)
         strategy.call!('rack.session' => { 'omniauth.state' => state, 'omniauth.nonce' => nonce })
         strategy.callback_phase
       end
