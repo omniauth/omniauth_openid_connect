@@ -187,7 +187,7 @@ module OmniAuth
         id_token.stubs(:verify!).with(issuer: strategy.options.issuer, client_id: @identifier, nonce: nonce).returns(true)
         id_token.expects(:verify!)
 
-        strategy.expects(:decode_id_token).with(access_token.id_token).returns(id_token)
+        strategy.expects(:decode_id_token).twice.with(access_token.id_token).returns(id_token)
         strategy.call!('rack.session' => { 'omniauth.state' => state, 'omniauth.nonce' => nonce })
         strategy.callback_phase
       end
@@ -248,6 +248,7 @@ module OmniAuth
         ::OpenIDConnect::Discovery::Provider::Config.stubs(:discover!).with('https://example.com/').returns(config)
 
         id_token = stub('OpenIDConnect::ResponseObject::IdToken')
+        id_token.stubs(:raw_attributes).returns('sub' => 'sub', 'name' => 'name', 'email' => 'email')
         id_token.stubs(:verify!).with(issuer: 'https://example.com/', client_id: @identifier, nonce: nonce).returns(true)
         ::OpenIDConnect::ResponseObject::IdToken.stubs(:decode).returns(id_token)
 
@@ -587,7 +588,7 @@ module OmniAuth
 
         id_token = stub('OpenIDConnect::ResponseObject::IdToken')
         id_token.stubs(:verify!).returns(true)
-        id_token.stubs(:raw_attributes, :to_h).returns( 
+        id_token.stubs(:raw_attributes, :to_h).returns(
           {
             "iss": "http://server.example.com",
             "sub": "248289761001",

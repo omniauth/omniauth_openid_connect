@@ -201,7 +201,15 @@ module OmniAuth
       end
 
       def user_info
-        @user_info ||= access_token.userinfo!
+        return @user_info if @user_info
+
+        if access_token.id_token
+          decoded = decode_id_token(access_token.id_token).raw_attributes
+
+          @user_info = ::OpenIDConnect::ResponseObject::UserInfo.new access_token.userinfo!.raw_attributes.merge(decoded)
+        else
+          @user_info = access_token.userinfo!
+        end
       end
 
       def access_token
