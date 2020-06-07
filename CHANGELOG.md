@@ -1,3 +1,8 @@
+# v0.3.5 (07.06.2020)
+
+- bugfix: Info from decoded id_token is not exposed into `request.env['omniauth.auth']` [#61](https://github.com/m0n9oose/omniauth_openid_connect/pull/61)
+- bugfix: NoMethodError (`undefined method 'count' for #<OpenIDConnect::ResponseObject::IdToken>`) [#60](https://github.com/m0n9oose/omniauth_openid_connect/pull/60)
+
 # v0.3.4 (21.05.2020)
 
 - Try to verify id_token when response_type is code [#44](https://github.com/m0n9oose/omniauth_openid_connect/pull/44)
