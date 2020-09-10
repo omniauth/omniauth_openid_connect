@@ -226,7 +226,7 @@ module OmniAuth
       end
 
       def decode_id_token(id_token)
-        ::OpenIDConnect::ResponseObject::IdToken.decode(id_token, :skip_verification)
+        ::OpenIDConnect::ResponseObject::IdToken.decode(id_token, public_key[0])
       end
 
       def client_options
