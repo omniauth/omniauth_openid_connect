@@ -25,6 +25,7 @@ module OmniAuth
       option(:client_options, identifier: nil,
                               secret: nil,
                               redirect_uri: nil,
+                              forwarding_request_params: [],
                               scheme: 'https',
                               host: nil,
                               port: 443,
@@ -291,9 +292,18 @@ module OmniAuth
       end
 
       def redirect_uri
+        client_options.redirect_uri = "#{client_options.redirect_uri}?#{forwarding_params}" unless forwarding_params.blank?
         return client_options.redirect_uri unless params['redirect_uri']
 
         "#{ client_options.redirect_uri }?redirect_uri=#{ CGI.escape(params['redirect_uri']) }"
+      end
+    
+      def forwarding_params
+        fwd_params = ""
+        params.select { |_k, v| client_options.forwading_request_params.include?(_k) }.each do |k, v|
+          fwd_params=fwd_params+"#{k}=#{v}&"
+        end
+        fwd_params[0..-2] 
       end
 
       def encoded_post_logout_redirect_uri
