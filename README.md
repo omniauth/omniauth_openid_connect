@@ -30,6 +30,7 @@ Example configuration
 ```ruby
 config.omniauth :openid_connect, {
   name: :my_provider,
+  issuer: 'https://myprovider.com',
   scope: [:openid, :email, :profile, :address],
   response_type: :code,
   uid_field: "preferred_username",
