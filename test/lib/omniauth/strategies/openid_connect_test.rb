@@ -615,6 +615,43 @@ module OmniAuth
         assert auth_hash.key?('extra')
         assert auth_hash['extra'].key?('raw_info')
       end
+
+      def test_option_pkce
+        strategy.options.client_options[:host] = 'example.com'
+
+        # test pkce disabled
+        strategy.options.pkce = false
+
+        assert(!(strategy.authorize_uri =~ /code_challenge=/), 'URI must not contain code challenge param')
+        assert(!(strategy.authorize_uri =~ /code_challenge_method=/), 'URI must not contain code challenge method param')
+
+        # test pkce enabled with default opts
+        strategy.options.pkce = true
+
+        assert(strategy.authorize_uri =~ /code_challenge=/, 'URI must contain code challenge param')
+        assert(strategy.authorize_uri =~ /code_challenge_method=/, 'URI must contain code challenge method param')
+
+        # test pkce with custom verifier code
+        strategy.options.pkce_verifier = "dummy_verifier"
+        code_challenge_value = Base64.urlsafe_encode64(
+          Digest::SHA2.digest(strategy.options.pkce_verifier),
+          padding: false,
+          )
+
+        assert(strategy.authorize_uri =~ /#{Regexp.quote(code_challenge_value)}/, 'URI must contain code challenge value')
+
+        # test pkce with custom options and plain text code
+        strategy.options.pkce_options =
+        {
+          code_challenge: proc { |verifier|
+            verifier
+          },
+          code_challenge_method: "plain",
+        }
+
+        assert(strategy.authorize_uri =~ /#{Regexp.quote(strategy.options.pkce_verifier)}/, 'URI must contain code challenge value')
+
+      end
     end
   end
 end
