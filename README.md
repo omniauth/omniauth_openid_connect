@@ -48,7 +48,7 @@ config.omniauth :openid_connect, {
 
 | Field                        | Description                                                                                                                                                   | Required | Default                    | Example/Options                                     |
 |------------------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------|----------|----------------------------|-----------------------------------------------------|
-| name                         | Arbitrary string to identify connection and identify it from other openid_connect providers                                                                                                                        | no       | String: openid_connect     | :my_idp                                             |
+| name                         | Arbitrary string to identify connection and identify it from other openid_connect providers                                                                   | no       | String: openid_connect     | :my_idp                                             |
 | issuer                       | Root url for the authorization server                                                                                                                         | yes      |                            | https://myprovider.com                              |
 | discovery                    | Should OpenID discovery be used. This is recommended if the IDP provides a discovery endpoint. See client config for how to manually enter discovered values. | no       | false                      | one of: true, false                                 |
 | client_auth_method           | Which authentication method to use to authenticate your app with the authorization server                                                                     | no       | Sym: basic                 | "basic", "jwks"                                     |
@@ -61,6 +61,9 @@ config.omniauth :openid_connect, {
 | send_scope_to_token_endpoint | Should the scope parameter be sent to the authorization token endpoint?                                                                                       | no       | true                       | one of: true, false                                 |
 | post_logout_redirect_uri     | The logout redirect uri to use per the [session management draft](https://openid.net/specs/openid-connect-session-1_0.html)                                   | no       | empty                      | https://myapp.com/logout/callback                   |
 | uid_field                    | The field of the user info response to be used as a unique id                                                                                                 | no       | 'sub'                      | "sub", "preferred_username"                         |
+| pkce                         | Enable [PKCE flow](https://oauth.net/2/pkce/)                                                                                                                 | no       | false                      | one of: true, false                                 |
+| pkce_verifier                | Specify a custom PKCE verifier code.                                                                                                                          | no       | Random 32 character string | Proc.new { SecureRandom.hex(64) }                   |
+| pkce_options                 | Specify a custom implementation of the PKCE code challenge/method.                                                                                            | no       | Hash with default impl     | Proc to customise the code challenge generation     |
 | client_options               | A hash of client options detailed in its own section                                                                                                          | yes      |                            |                                                     |
 
 ### Client Config Options
@@ -91,7 +94,7 @@ These are the configuration options for the client_options hash of the configura
 
   * `response_type` tells the authorization server which grant type the application wants to use,
   currently, only `:code` (Authorization Code grant) and `:id_token` (Implicit grant) are valid.
-  * If you want to pass `state` paramete by yourself. You can set Proc Object.
+  * If you want to pass `state` parameter by yourself. You can set Proc Object.
   e.g. `state: Proc.new { SecureRandom.hex(32) }`
   * `nonce` is optional. If don't want to pass "nonce" parameter to provider, You should specify
   `false` to `send_nonce` option. (default true)
@@ -112,6 +115,7 @@ These are the configuration options for the client_options hash of the configura
   this is not in the protocol specifications. In those cases, the `send_scope_to_token_endpoint`
   property can be used to add the attribute to the token request. Initial value is `true`, which means that the
   scope attribute is included by default.
+  * PKCE flow is supported, simple set the PKCE option to true. Use the PKCE verifier and/or PKCE options settings to customise.
 
 For the full low down on OpenID Connect, please check out
 [the spec](http://openid.net/specs/openid-connect-core-1_0.html).
