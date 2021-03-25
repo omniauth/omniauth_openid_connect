@@ -19,17 +19,17 @@ Gem::Specification.new do |spec|
   spec.test_files    = spec.files.grep(%r{^(test|spec|features)/})
   spec.require_paths = ['lib']
 
-  spec.add_dependency 'addressable', '~> 2.5'
+  spec.add_dependency 'addressable', '~> 2.7'
   spec.add_dependency 'omniauth', '~> 1.9'
-  spec.add_dependency 'openid_connect', '~> 1.1'
+  spec.add_dependency 'openid_connect', '~> 1.2'
   spec.add_development_dependency 'coveralls', '~> 0.8'
-  spec.add_development_dependency 'faker', '~> 1.6'
+  spec.add_development_dependency 'faker', '~> 2.17'
   spec.add_development_dependency 'guard', '~> 2.14'
-  spec.add_development_dependency 'guard-bundler', '~> 2.2'
+  spec.add_development_dependency 'guard-bundler', '~> 3.0'
   spec.add_development_dependency 'guard-minitest', '~> 2.4'
-  spec.add_development_dependency 'minitest', '~> 5.1'
-  spec.add_development_dependency 'mocha', '~> 1.7'
-  spec.add_development_dependency 'rake', '~> 12.0'
-  spec.add_development_dependency 'rubocop', '~> 0.63'
-  spec.add_development_dependency 'simplecov', '~> 0.12'
+  spec.add_development_dependency 'minitest', '~> 5.14'
+  spec.add_development_dependency 'mocha', '~> 1.12'
+  spec.add_development_dependency 'rake', '~> 13.0'
+  spec.add_development_dependency 'rubocop', '~> 1.12'
+  spec.add_development_dependency 'simplecov', '~> 0.16'
 end
