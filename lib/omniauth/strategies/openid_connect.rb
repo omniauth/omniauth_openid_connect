@@ -10,6 +10,7 @@ require 'forwardable'
 
 module OmniAuth
   module Strategies
+    # rubocop:disable Metrics/ClassLength
     class OpenIDConnect
       include OmniAuth::Strategy
       extend Forwardable
@@ -103,6 +104,7 @@ module OmniAuth
         redirect authorize_uri
       end
 
+      # rubocop:disable Metrics/AbcSize
       def callback_phase
         error = params['error_reason'] || params['error']
         error_description = params['error_description'] || params['error_reason']
@@ -133,6 +135,7 @@ module OmniAuth
       rescue ::SocketError => e
         fail!(:failed_to_connect, e)
       end
+      # rubocop:enable Metrics/AbcSize
 
       def other_phase
         if logout_path_pattern.match?(current_path)
@@ -359,6 +362,7 @@ module OmniAuth
         end
       end
     end
+    # rubocop:enable Metrics/ClassLength
   end
 end
 
