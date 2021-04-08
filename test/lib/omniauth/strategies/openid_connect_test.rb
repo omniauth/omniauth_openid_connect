@@ -22,6 +22,7 @@ module OmniAuth
         expected_redirect = %r{^https:\/\/example\.com\/logout$}
         strategy.options.client_options.host = 'example.com'
         strategy.options.discovery = true
+        strategy.stubs(:script_name).returns('')
 
         issuer = stub('OpenIDConnect::Discovery::Issuer')
         issuer.stubs(:issuer).returns('https://example.com/')
@@ -46,6 +47,7 @@ module OmniAuth
         strategy.options.client_options.host = 'example.com'
         strategy.options.discovery = true
         strategy.options.post_logout_redirect_uri = 'https://mysite.com'
+        strategy.stubs(:script_name).returns('')
 
         issuer = stub('OpenIDConnect::Discovery::Issuer')
         issuer.stubs(:issuer).returns('https://example.com/')
@@ -68,6 +70,7 @@ module OmniAuth
       def test_logout_phase
         strategy.options.issuer = 'example.com'
         strategy.options.client_options.host = 'example.com'
+        strategy.stubs(:script_name).returns('')
 
         request.stubs(:path_info).returns('/auth/openid_connect/logout')
 
@@ -166,6 +169,7 @@ module OmniAuth
         nonce = SecureRandom.hex(16)
         request.stubs(:params).returns('code' => code, 'state' => state)
         request.stubs(:path_info).returns('')
+        request.stubs(:path).returns('')
 
         strategy.options.issuer = 'example.com'
         strategy.options.client_signing_alg = :RS256
@@ -198,6 +202,7 @@ module OmniAuth
         nonce = SecureRandom.hex(16)
         request.stubs(:params).returns('id_token' => code, 'state' => state)
         request.stubs(:path_info).returns('')
+        request.stubs(:path).returns('')
 
         strategy.options.issuer = 'example.com'
         strategy.options.client_signing_alg = :RS256
@@ -230,6 +235,7 @@ module OmniAuth
 
         request.stubs(:params).returns('code' => code, 'state' => state)
         request.stubs(:path_info).returns('')
+        request.stubs(:path).returns('')
 
         strategy.options.client_options.host = 'example.com'
         strategy.options.discovery = true
@@ -271,6 +277,7 @@ module OmniAuth
         nonce = SecureRandom.hex(16)
         request.stubs(:params).returns('error' => 'invalid_request')
         request.stubs(:path_info).returns('')
+        request.stubs(:path).returns('')
 
         strategy.call!({'rack.session' => {'omniauth.state' => state, 'omniauth.nonce' => nonce}})
         strategy.expects(:fail!)
@@ -283,6 +290,7 @@ module OmniAuth
         nonce = SecureRandom.hex(16)
         request.stubs(:params).returns('code' => code, 'state' => 'foobar')
         request.stubs(:path_info).returns('')
+        request.stubs(:path).returns('')
 
         strategy.call!('rack.session' => { 'omniauth.state' => state, 'omniauth.nonce' => nonce })
         strategy.expects(:fail!)
@@ -294,6 +302,7 @@ module OmniAuth
         nonce = SecureRandom.hex(16)
         request.stubs(:params).returns('state' => state)
         request.stubs(:path_info).returns('')
+        request.stubs(:path).returns('')
 
         strategy.call!('rack.session' => { 'omniauth.state' => state, 'omniauth.nonce' => nonce })
 
@@ -306,6 +315,7 @@ module OmniAuth
         nonce = SecureRandom.hex(16)
         request.stubs(:params).returns('state' => state)
         request.stubs(:path_info).returns('')
+        request.stubs(:path).returns('')
         strategy.options.response_type = 'id_token'
 
         strategy.call!('rack.session' => { 'omniauth.state' => state, 'omniauth.nonce' => nonce })
@@ -319,6 +329,7 @@ module OmniAuth
         nonce = SecureRandom.hex(16)
         request.stubs(:params).returns('state' => state)
         request.stubs(:path_info).returns('')
+        request.stubs(:path).returns('')
         strategy.options.response_type = :id_token
 
         strategy.call!('rack.session' => { 'omniauth.state' => state, 'omniauth.nonce' => nonce })
@@ -333,6 +344,7 @@ module OmniAuth
         nonce = SecureRandom.hex(16)
         request.stubs(:params).returns('code' => code, 'state' => state)
         request.stubs(:path_info).returns('')
+        request.stubs(:path).returns('')
 
         strategy.options.issuer = 'example.com'
 
@@ -353,6 +365,7 @@ module OmniAuth
         nonce = SecureRandom.hex(16)
         request.stubs(:params).returns('code' => code, 'state' => state)
         request.stubs(:path_info).returns('')
+        request.stubs(:path).returns('')
 
         strategy.options.issuer = 'example.com'
 
@@ -373,6 +386,7 @@ module OmniAuth
         nonce = SecureRandom.hex(16)
         request.stubs(:params).returns('code' => code, 'state' => state)
         request.stubs(:path_info).returns('')
+        request.stubs(:path).returns('')
 
         strategy.options.issuer = 'example.com'
 
@@ -393,6 +407,7 @@ module OmniAuth
         nonce = SecureRandom.hex(16)
         request.stubs(:params).returns('code' => code, 'state' => state)
         request.stubs(:path_info).returns('')
+        request.stubs(:path).returns('')
 
         strategy.options.issuer = 'example.com'
 
@@ -494,6 +509,7 @@ module OmniAuth
         code = SecureRandom.hex(16)
         request.stubs(:params).returns('code' => code, 'state' => 43)
         request.stubs(:path_info).returns('')
+        request.stubs(:path).returns('')
 
         strategy.call!('rack.session' => session)
         strategy.expects(:fail!)
@@ -503,6 +519,7 @@ module OmniAuth
       def test_dynamic_state
         # Stub request parameters
         request.stubs(:path_info).returns('')
+        request.stubs(:path).returns('')
         strategy.call!('rack.session' => { }, QUERY_STRING: { state: 'abc', client_id: '123' } )
 
         strategy.options.state = lambda { |env|
@@ -536,6 +553,7 @@ module OmniAuth
         success = Struct.new(:status, :body).new(200, json_response)
 
         request.stubs(:path_info).returns('')
+        request.stubs(:path).returns('')
         strategy.call!('rack.session' => { 'omniauth.state' => state, 'omniauth.nonce' => nonce })
 
         id_token = stub('OpenIDConnect::ResponseObject::IdToken')
@@ -601,6 +619,7 @@ module OmniAuth
 
         request.stubs(:params).returns('state' => state, 'nounce' => nonce, 'id_token' => id_token)
         request.stubs(:path_info).returns('')
+        request.stubs(:path).returns('')
 
         strategy.stubs(:decode_id_token).returns(id_token)
         strategy.stubs(:stored_state).returns(state)
