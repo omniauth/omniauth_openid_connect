@@ -335,6 +335,39 @@ module OmniAuth
         strategy.callback_phase
       end
 
+      def test_callback_phase_with_jwks_uri
+        id_token = jwt.to_s
+        state = SecureRandom.hex(16)
+        request.stubs(:params).returns('id_token' => id_token, 'state' => state)
+        request.stubs(:path_info).returns('')
+
+        strategy.options.issuer = 'example.com'
+        strategy.options.client_options.jwks_uri = 'https://jwks.example.com'
+        strategy.options.response_type = 'id_token'
+
+        HTTPClient
+          .any_instance.stubs(:get_content)
+          .with(strategy.options.client_options.jwks_uri)
+          .returns(jwks.to_json)
+
+        strategy.unstub(:user_info)
+        access_token = stub('OpenIDConnect::AccessToken')
+        access_token.stubs(:access_token)
+        access_token.stubs(:refresh_token)
+        access_token.stubs(:expires_in)
+        access_token.stubs(:scope)
+        access_token.stubs(:id_token).returns(id_token)
+
+        id_token = stub('OpenIDConnect::ResponseObject::IdToken')
+        id_token.stubs(:raw_attributes).returns('sub' => 'sub', 'name' => 'name', 'email' => 'email')
+        id_token.stubs(:verify!).with(issuer: strategy.options.issuer, client_id: @identifier, nonce: nonce).returns(true)
+        ::OpenIDConnect::ResponseObject::IdToken.stubs(:decode).returns(id_token)
+        id_token.expects(:verify!)
+
+        strategy.call!('rack.session' => { 'omniauth.state' => state, 'omniauth.nonce' => nonce })
+        strategy.callback_phase
+      end
+
       def test_callback_phase_with_error
         state = SecureRandom.hex(16)
         request.stubs(:params).returns('error' => 'invalid_request')
