@@ -3,15 +3,28 @@ class StrategyTestCase < MiniTest::Test
     def call(env); end
   end
 
-  attr_accessor :identifier, :secret
+  attr_accessor :identifier, :secret, :issuer, :nonce
 
   def setup
     @identifier = '1234'
     @secret = '1234asdgat3'
+    @issuer = "https://server.example.com"
+    @nonce = SecureRandom.hex(16)
   end
 
   def client
     strategy.client
+  end
+
+  def payload
+    {
+      "iss": issuer,
+      "aud": identifier,
+      "sub": "248289761001",
+      "nonce": nonce,
+      "exp": Time.now.to_i + 1000,
+      "iat": Time.now.to_i + 1000
+    }
   end
 
   def user_info

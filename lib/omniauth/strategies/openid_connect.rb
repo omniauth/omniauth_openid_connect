@@ -177,9 +177,13 @@ module OmniAuth
       end
 
       def public_key
-        return config.jwks if options.discovery
-
-        key_or_secret
+        @public_key ||= begin
+          if options.discovery
+            config.jwks
+          else
+            key_or_secret
+          end
+        end
       end
 
       private
@@ -226,7 +230,37 @@ module OmniAuth
       end
 
       def decode_id_token(id_token)
-        ::OpenIDConnect::ResponseObject::IdToken.decode(id_token, public_key)
+        decode!(id_token, public_key)
+      rescue JSON::JWK::Set::KidNotFound
+        # Either the JWT doesn't have kid specified or the set of keys doesn't
+        # have a matching key. Since we can't tell the first case from the second,
+        # try each key individually to see if one works.
+        # https://github.com/nov/json-jwt/pull/92#issuecomment-824654949
+        decoded = decode_with_each_key!(id_token)
+
+        raise unless decoded
+
+        decoded
+      end
+
+      def decode!(id_token, key)
+        ::OpenIDConnect::ResponseObject::IdToken.decode(id_token, key)
+      end
+
+      def decode_with_each_key!(id_token)
+        return unless public_key.is_a?(JSON::JWK::Set)
+
+        public_key.each do |key|
+          begin
+            decoded = decode!(id_token, key)
+          rescue JSON::JWK::Set::KidNotFound, JSON::JWS::VerificationFailed
+            next
+          end
+
+          return decoded if decoded
+        end
+
+        nil
       end
 
       def client_options

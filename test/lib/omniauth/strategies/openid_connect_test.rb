@@ -222,6 +222,52 @@ module OmniAuth
         strategy.callback_phase
       end
 
+      def test_callback_phase_with_id_token_no_kid
+        rsa_private = OpenSSL::PKey::RSA.generate(2048)
+        other_rsa_private = OpenSSL::PKey::RSA.generate(2048)
+
+        key = JSON::JWK.new(rsa_private)
+        other_key = JSON::JWK.new(other_rsa_private)
+        token = JSON::JWT.new(payload).sign(rsa_private, :RS256).to_s
+        state = SecureRandom.hex(16)
+        request.stubs(:params).returns('id_token' => token, 'state' => state)
+        request.stubs(:path_info).returns('')
+
+        strategy.options.issuer = issuer
+        strategy.options.client_signing_alg = :RS256
+        strategy.options.client_jwk_signing_key = { 'keys' => [other_key, key] }.to_json
+        strategy.options.response_type = 'id_token'
+
+        strategy.unstub(:user_info)
+        strategy.call!('rack.session' => { 'omniauth.state' => state, 'omniauth.nonce' => nonce })
+        strategy.callback_phase
+      end
+
+      def test_callback_phase_with_id_token_no_matching_key
+        rsa_private = OpenSSL::PKey::RSA.generate(2048)
+        other_rsa_private = OpenSSL::PKey::RSA.generate(2048)
+
+        nonce =  SecureRandom.hex(16)
+        key = JSON::JWK.new(rsa_private)
+        other_key = JSON::JWK.new(other_rsa_private)
+        token = JSON::JWT.new(payload).sign(rsa_private, :RS256).to_s
+        state = SecureRandom.hex(16)
+        request.stubs(:params).returns('id_token' => token, 'state' => state)
+        request.stubs(:path_info).returns('')
+
+        strategy.options.issuer = issuer
+        strategy.options.client_signing_alg = :RS256
+        strategy.options.client_jwk_signing_key = { 'keys' => [other_key] }.to_json
+        strategy.options.response_type = 'id_token'
+
+        strategy.unstub(:user_info)
+        strategy.call!('rack.session' => { 'omniauth.state' => state, 'omniauth.nonce' => nonce })
+
+        assert_raises JSON::JWK::Set::KidNotFound do
+          strategy.callback_phase
+        end
+      end
+
       def test_callback_phase_with_discovery
         code = SecureRandom.hex(16)
         state = SecureRandom.hex(16)
