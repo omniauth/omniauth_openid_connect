@@ -19,7 +19,7 @@ And then execute:
 Or install it yourself as:
 
     $ gem install omniauth_openid_connect
-    
+
 ## Supported Ruby Versions
 
 OmniAuth::OpenIDConnect is tested under 2.4, 2.5, 2.6, 2.7
@@ -61,6 +61,8 @@ config.omniauth :openid_connect, {
 | send_scope_to_token_endpoint | Should the scope parameter be sent to the authorization token endpoint?                                                                                       | no       | true                       | one of: true, false                                 |
 | post_logout_redirect_uri     | The logout redirect uri to use per the [session management draft](https://openid.net/specs/openid-connect-session-1_0.html)                                   | no       | empty                      | https://myapp.com/logout/callback                   |
 | uid_field                    | The field of the user info response to be used as a unique id                                                                                                 | no       | 'sub'                      | "sub", "preferred_username"                         |
+| extra_authorize_params       | A hash of extra fixed parameters that will be merged to the authorization request                                                                             | no       | Hash                       | {"tenant" => "common"}                              |
+| allow_authorize_params       | A list of allowed dynamic parameters that will be merged to the authorization request                                                                         | no       | Array                      | [:screen_name]                                      |
 | client_options               | A hash of client options detailed in its own section                                                                                                          | yes      |                            |                                                     |
 
 ### Client Config Options
