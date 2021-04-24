@@ -163,7 +163,6 @@ module OmniAuth
       def test_callback_phase(session = {}, params = {})
         code = SecureRandom.hex(16)
         state = SecureRandom.hex(16)
-        nonce = SecureRandom.hex(16)
         request.stubs(:params).returns('code' => code, 'state' => state)
         request.stubs(:path_info).returns('')
 
@@ -195,7 +194,6 @@ module OmniAuth
       def test_callback_phase_with_id_token
         code = SecureRandom.hex(16)
         state = SecureRandom.hex(16)
-        nonce = SecureRandom.hex(16)
         request.stubs(:params).returns('id_token' => code, 'state' => state)
         request.stubs(:path_info).returns('')
 
@@ -247,7 +245,6 @@ module OmniAuth
         rsa_private = OpenSSL::PKey::RSA.generate(2048)
         other_rsa_private = OpenSSL::PKey::RSA.generate(2048)
 
-        nonce =  SecureRandom.hex(16)
         key = JSON::JWK.new(rsa_private)
         other_key = JSON::JWK.new(other_rsa_private)
         token = JSON::JWT.new(payload).sign(rsa_private, :RS256).to_s
@@ -271,7 +268,6 @@ module OmniAuth
       def test_callback_phase_with_discovery
         code = SecureRandom.hex(16)
         state = SecureRandom.hex(16)
-        nonce = SecureRandom.hex(16)
         jwks = JSON::JWK::Set.new(JSON.parse(File.read('test/fixtures/jwks.json'))['keys'])
 
         request.stubs(:params).returns('code' => code, 'state' => state)
@@ -314,7 +310,6 @@ module OmniAuth
 
       def test_callback_phase_with_error
         state = SecureRandom.hex(16)
-        nonce = SecureRandom.hex(16)
         request.stubs(:params).returns('error' => 'invalid_request')
         request.stubs(:path_info).returns('')
 
@@ -326,7 +321,6 @@ module OmniAuth
       def test_callback_phase_with_invalid_state
         code = SecureRandom.hex(16)
         state = SecureRandom.hex(16)
-        nonce = SecureRandom.hex(16)
         request.stubs(:params).returns('code' => code, 'state' => 'foobar')
         request.stubs(:path_info).returns('')
 
@@ -337,7 +331,6 @@ module OmniAuth
 
       def test_callback_phase_without_code
         state = SecureRandom.hex(16)
-        nonce = SecureRandom.hex(16)
         request.stubs(:params).returns('state' => state)
         request.stubs(:path_info).returns('')
 
@@ -349,7 +342,6 @@ module OmniAuth
 
       def test_callback_phase_without_id_token
         state = SecureRandom.hex(16)
-        nonce = SecureRandom.hex(16)
         request.stubs(:params).returns('state' => state)
         request.stubs(:path_info).returns('')
         strategy.options.response_type = 'id_token'
@@ -362,7 +354,6 @@ module OmniAuth
 
       def test_callback_phase_without_id_token_symbol
         state = SecureRandom.hex(16)
-        nonce = SecureRandom.hex(16)
         request.stubs(:params).returns('state' => state)
         request.stubs(:path_info).returns('')
         strategy.options.response_type = :id_token
@@ -376,7 +367,6 @@ module OmniAuth
       def test_callback_phase_with_timeout
         code = SecureRandom.hex(16)
         state = SecureRandom.hex(16)
-        nonce = SecureRandom.hex(16)
         request.stubs(:params).returns('code' => code, 'state' => state)
         request.stubs(:path_info).returns('')
 
@@ -396,7 +386,6 @@ module OmniAuth
       def test_callback_phase_with_etimeout
         code = SecureRandom.hex(16)
         state = SecureRandom.hex(16)
-        nonce = SecureRandom.hex(16)
         request.stubs(:params).returns('code' => code, 'state' => state)
         request.stubs(:path_info).returns('')
 
@@ -416,7 +405,6 @@ module OmniAuth
       def test_callback_phase_with_socket_error
         code = SecureRandom.hex(16)
         state = SecureRandom.hex(16)
-        nonce = SecureRandom.hex(16)
         request.stubs(:params).returns('code' => code, 'state' => state)
         request.stubs(:path_info).returns('')
 
@@ -436,7 +424,6 @@ module OmniAuth
       def test_callback_phase_with_rack_oauth2_client_error
         code = SecureRandom.hex(16)
         state = SecureRandom.hex(16)
-        nonce = SecureRandom.hex(16)
         request.stubs(:params).returns('code' => code, 'state' => state)
         request.stubs(:path_info).returns('')
 
@@ -565,7 +552,6 @@ module OmniAuth
 
       def test_option_client_auth_method
         state = SecureRandom.hex(16)
-        nonce = SecureRandom.hex(16)
 
         opts = strategy.options.client_options
         opts[:host] = 'foobar.com'
@@ -628,7 +614,6 @@ module OmniAuth
 
       def test_id_token_auth_hash
         state = SecureRandom.hex(16)
-        nonce = SecureRandom.hex(16)
         strategy.options.response_type = 'id_token'
         strategy.options.issuer = 'example.com'
 
