@@ -253,7 +253,7 @@ module OmniAuth
         public_key.each do |key|
           begin
             decoded = decode!(id_token, key)
-          rescue JSON::JWK::Set::KidNotFound, JSON::JWS::VerificationFailed
+          rescue JSON::JWS::VerificationFailed
             next
           end
 
