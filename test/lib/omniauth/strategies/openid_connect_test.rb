@@ -33,7 +33,7 @@ module OmniAuth
         config.stubs(:userinfo_endpoint).returns('https://example.com/userinfo')
         config.stubs(:jwks_uri).returns('https://example.com/jwks')
         config.stubs(:end_session_endpoint).returns('https://example.com/logout')
-        ::OpenIDConnect::Discovery::Provider::Config.stubs(:discover!).with('https://example.com/').returns(config)
+        ::OpenIDConnect::Discovery::Provider::Config.stubs(:discover!).with('https://example.com/', {}).returns(config)
 
         request.stubs(:path_info).returns('/auth/openid_connect/logout')
 
@@ -57,7 +57,7 @@ module OmniAuth
         config.stubs(:userinfo_endpoint).returns('https://example.com/userinfo')
         config.stubs(:jwks_uri).returns('https://example.com/jwks')
         config.stubs(:end_session_endpoint).returns('https://example.com/logout')
-        ::OpenIDConnect::Discovery::Provider::Config.stubs(:discover!).with('https://example.com/').returns(config)
+        ::OpenIDConnect::Discovery::Provider::Config.stubs(:discover!).with('https://example.com/', {}).returns(config)
 
         request.stubs(:path_info).returns('/auth/openid_connect/logout')
 
@@ -89,6 +89,7 @@ module OmniAuth
         expected_redirect = /^https:\/\/example\.com\/authorization\?client_id=1234&nonce=\w{32}&response_type=code&scope=openid&state=\w{32}$/
         strategy.options.client_options.host = 'example.com'
         strategy.options.discovery = true
+        strategy.options.discovery_cache_options = { expires_in: 1.hour }
 
         issuer = stub('OpenIDConnect::Discovery::Issuer')
         issuer.stubs(:issuer).returns('https://example.com/')
@@ -99,7 +100,7 @@ module OmniAuth
         config.stubs(:token_endpoint).returns('https://example.com/token')
         config.stubs(:userinfo_endpoint).returns('https://example.com/userinfo')
         config.stubs(:jwks_uri).returns('https://example.com/jwks')
-        ::OpenIDConnect::Discovery::Provider::Config.stubs(:discover!).with('https://example.com/').returns(config)
+        ::OpenIDConnect::Discovery::Provider::Config.stubs(:discover!).with('https://example.com/', strategy.options.discovery_cache_options).returns(config)
 
         strategy.expects(:redirect).with(regexp_matches(expected_redirect))
         strategy.request_phase
@@ -245,7 +246,7 @@ module OmniAuth
         config.stubs(:jwks_uri).returns('https://example.com/jwks')
         config.stubs(:jwks).returns(jwks)
 
-        ::OpenIDConnect::Discovery::Provider::Config.stubs(:discover!).with('https://example.com/').returns(config)
+        ::OpenIDConnect::Discovery::Provider::Config.stubs(:discover!).with('https://example.com/', {}).returns(config)
 
         id_token = stub('OpenIDConnect::ResponseObject::IdToken')
         id_token.stubs(:raw_attributes).returns('sub' => 'sub', 'name' => 'name', 'email' => 'email')
