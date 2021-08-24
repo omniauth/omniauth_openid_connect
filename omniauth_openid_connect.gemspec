@@ -20,7 +20,7 @@ Gem::Specification.new do |spec|
   spec.require_paths = ['lib']
 
   spec.add_dependency 'addressable', '~> 2.8'
-  spec.add_dependency 'omniauth', '~> 1.9'
+  spec.add_dependency 'omniauth', '~> 2.0'
   spec.add_dependency 'openid_connect', '~> 1.2'
   spec.add_development_dependency 'coveralls_reborn', '~> 0.22'
   spec.add_development_dependency 'faker', '~> 2.19'

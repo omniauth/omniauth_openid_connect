@@ -256,6 +256,12 @@ module OmniAuth
         session.delete('omniauth.nonce')
       end
 
+      def script_name
+        return '' if @env.nil?
+
+        super
+      end
+
       def session
         return {} if @env.nil?
 
