@@ -35,6 +35,7 @@ module OmniAuth
         config.stubs(:end_session_endpoint).returns('https://example.com/logout')
         ::OpenIDConnect::Discovery::Provider::Config.stubs(:discover!).with('https://example.com/').returns(config)
 
+        request.stubs(:path_info).returns('/auth/openid_connect/logout')
         request.stubs(:path).returns('/auth/openid_connect/logout')
 
         strategy.expects(:redirect).with(regexp_matches(expected_redirect))
@@ -59,6 +60,7 @@ module OmniAuth
         config.stubs(:end_session_endpoint).returns('https://example.com/logout')
         ::OpenIDConnect::Discovery::Provider::Config.stubs(:discover!).with('https://example.com/').returns(config)
 
+        request.stubs(:path_info).returns('/auth/openid_connect/logout')
         request.stubs(:path).returns('/auth/openid_connect/logout')
 
         strategy.expects(:redirect).with(expected_redirect)
