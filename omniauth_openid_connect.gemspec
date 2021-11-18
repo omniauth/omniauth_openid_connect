@@ -20,7 +20,7 @@ Gem::Specification.new do |spec|
   spec.require_paths = ['lib']
 
   spec.add_dependency 'addressable', '~> 2.5'
-  spec.add_dependency 'omniauth', '~> 1.9'
+  spec.add_dependency 'omniauth', '>= 1.9', '< 3'
   spec.add_dependency 'openid_connect', '~> 1.1'
   spec.add_development_dependency 'coveralls', '~> 0.8'
   spec.add_development_dependency 'faker', '~> 1.6'
@@ -30,6 +30,6 @@ Gem::Specification.new do |spec|
   spec.add_development_dependency 'minitest', '~> 5.1'
   spec.add_development_dependency 'mocha', '~> 1.7'
   spec.add_development_dependency 'rake', '~> 12.0'
-  spec.add_development_dependency 'rubocop', '~> 0.63'
+  spec.add_development_dependency 'rubocop', '~> 1.12'
   spec.add_development_dependency 'simplecov', '~> 0.12'
 end
