@@ -179,7 +179,7 @@ module OmniAuth
       def public_key
         return config.jwks if options.discovery
 
-        key_or_secret
+        key_or_secret || config.jwks
       end
 
       private
