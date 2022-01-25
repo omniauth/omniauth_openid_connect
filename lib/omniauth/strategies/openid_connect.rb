@@ -25,14 +25,18 @@ module OmniAuth
       option(:client_options, identifier: nil,
                               secret: nil,
                               redirect_uri: nil,
-                              scheme: 'https',
+                              scheme: 'http',
                               host: nil,
-                              port: 443,
+                              port: nil,
                               authorization_endpoint: '/authorize',
                               token_endpoint: '/token',
                               userinfo_endpoint: '/userinfo',
                               jwks_uri: '/jwk',
-                              end_session_endpoint: nil)
+                              end_session_endpoint: nil,
+                              code_challenge_method: 'S256',
+                              code_verifier: SecureRandom.hex(32),
+                              code_challenge: nil
+                            )
 
       option :issuer
       option :discovery, false
@@ -56,6 +60,8 @@ module OmniAuth
       option :post_logout_redirect_uri
       option :extra_authorize_params, {}
       option :uid_field, 'sub'
+      option :auth_scheme, :basic_auth
+
 
       def uid
         user_info.raw_attributes[options.uid_field.to_sym] || user_info.sub
@@ -90,20 +96,29 @@ module OmniAuth
       end
 
       def client
+
         @client ||= ::OpenIDConnect::Client.new(client_options)
       end
 
       def config
+
         @config ||= ::OpenIDConnect::Discovery::Provider::Config.discover!(options.issuer)
       end
 
       def request_phase
+
+        if client_options.scheme == "http"
+          WebFinger.url_builder = URI::HTTP
+          SWD.url_builder = URI::HTTP
+        end
         options.issuer = issuer if options.issuer.to_s.empty?
         discover!
         redirect authorize_uri
       end
 
       def callback_phase
+        # params nil
+        debugger
         error = params['error_reason'] || params['error']
         error_description = params['error_description'] || params['error_reason']
         invalid_state = params['state'].to_s.empty? || params['state'] != stored_state
@@ -144,10 +159,12 @@ module OmniAuth
       end
 
       def authorization_code
+
         params['code']
       end
 
       def end_session_uri
+
         return unless end_session_endpoint_is_valid?
 
         end_session_uri = URI(client_options.end_session_endpoint)
@@ -169,6 +186,9 @@ module OmniAuth
           nonce: (new_nonce if options.send_nonce),
           hd: options.hd,
           acr_values: options.acr_values,
+          code_challenge: Base64.encode64(Digest::SHA256.hexdigest(options.client_options.code_verifier)),
+          code_challenge_method: 'S256',
+          code_verifier: options.client_options.code_verifier
         }
 
         opts.merge!(options.extra_authorize_params) unless options.extra_authorize_params.empty?
@@ -185,12 +205,14 @@ module OmniAuth
       private
 
       def issuer
+
         resource = "#{ client_options.scheme }://#{ client_options.host }"
         resource = "#{ resource }:#{ client_options.port }" if client_options.port
         ::OpenIDConnect::Discovery::Provider.discover!(resource).issuer
       end
 
       def discover!
+        
         return unless options.discovery
 
         client_options.authorization_endpoint = config.authorization_endpoint
@@ -201,6 +223,7 @@ module OmniAuth
       end
 
       def user_info
+        
         return @user_info if @user_info
 
         if access_token.id_token
@@ -213,12 +236,12 @@ module OmniAuth
       end
 
       def access_token
+        debugger
         return @access_token if @access_token
 
-        @access_token = client.access_token!(
-          scope: (options.scope if options.send_scope_to_token_endpoint),
-          client_auth_method: options.client_auth_method
-        )
+        @access_token = client.access_token!(scope: (options.scope if options.send_scope_to_token_endpoint),
+                                             client_auth_method: options.client_auth_method,
+                                             code_verifier: options.client_options.code_verifier)
 
         verify_id_token!(@access_token.id_token) if configured_response_type == 'code'
 
@@ -226,14 +249,17 @@ module OmniAuth
       end
 
       def decode_id_token(id_token)
+        
         ::OpenIDConnect::ResponseObject::IdToken.decode(id_token, public_key)
       end
 
       def client_options
+        
         options.client_options
       end
 
       def new_state
+        
         state = if options.state.respond_to?(:call)
                   if options.state.arity == 1
                     options.state.call(env)
@@ -241,7 +267,8 @@ module OmniAuth
                     options.state.call
                   end
                 end
-        session['omniauth.state'] = state || SecureRandom.hex(16)
+
+        session['omniauth.state'] = state || SecureRandom.hex(16) # CSRF detected, invalid state cookie
       end
 
       def stored_state
@@ -249,10 +276,12 @@ module OmniAuth
       end
 
       def new_nonce
+        
         session['omniauth.nonce'] = SecureRandom.hex(16)
       end
 
       def stored_nonce
+        
         session.delete('omniauth.nonce')
       end
 
@@ -269,6 +298,7 @@ module OmniAuth
       end
 
       def key_or_secret
+        
         case options.client_signing_alg
         when :HS256, :HS384, :HS512
           client_options.secret
@@ -282,10 +312,12 @@ module OmniAuth
       end
 
       def parse_x509_key(key)
+        
         OpenSSL::X509::Certificate.new(key).public_key
       end
 
       def parse_jwk_key(key)
+        
         json = JSON.parse(key)
         return JSON::JWK::Set.new(json['keys']) if json.key?('keys')
 
@@ -293,16 +325,19 @@ module OmniAuth
       end
 
       def decode(str)
+        
         UrlSafeBase64.decode64(str).unpack1('B*').to_i(2).to_s
       end
 
       def redirect_uri
+        
         return client_options.redirect_uri unless params['redirect_uri']
 
         "#{ client_options.redirect_uri }?redirect_uri=#{ CGI.escape(params['redirect_uri']) }"
       end
 
       def encoded_post_logout_redirect_uri
+        
         return unless options.post_logout_redirect_uri
 
         URI.encode_www_form(
@@ -311,15 +346,18 @@ module OmniAuth
       end
 
       def end_session_endpoint_is_valid?
+        
         client_options.end_session_endpoint &&
           client_options.end_session_endpoint =~ URI::DEFAULT_PARSER.make_regexp
       end
 
       def logout_path_pattern
+        
         @logout_path_pattern ||= %r{\A#{Regexp.quote(request_path)}(/logout)}
       end
 
       def id_token_callback_phase
+        
         user_data = decode_id_token(params['id_token']).raw_attributes
         env['omniauth.auth'] = AuthHash.new(
           provider: name,
@@ -331,6 +369,7 @@ module OmniAuth
       end
 
       def valid_response_type?
+        
         return true if params.key?(configured_response_type)
 
         error_attrs = RESPONSE_TYPE_EXCEPTIONS[configured_response_type]
@@ -344,6 +383,7 @@ module OmniAuth
       end
 
       def verify_id_token!(id_token)
+        
         return unless id_token
 
         decode_id_token(id_token).verify!(issuer: options.issuer,
