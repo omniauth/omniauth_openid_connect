@@ -19,8 +19,16 @@ Gem::Specification.new do |spec|
   spec.test_files    = spec.files.grep(%r{^(test|spec|features)/})
   spec.require_paths = ['lib']
 
+  spec.metadata = {
+    'bug_tracker_uri' => 'https://github.com/m0n9oose/omniauth_openid_connect/issues',
+    'changelog_uri' => 'https://github.com/m0n9oose/omniauth_openid_connect/releases',
+    'documentation_uri' => "https://github.com/m0n9oose/omniauth_openid_connect/tree/v#{spec.version}#readme",
+    'source_code_uri' => "https://github.com/m0n9oose/omniauth_openid_connect/tree/v#{spec.version}",
+    'rubygems_mfa_required' => 'true',
+  }
+
   spec.add_dependency 'addressable', '~> 2.5'
-  spec.add_dependency 'omniauth', '~> 1.9'
+  spec.add_dependency 'omniauth', '>= 1.9', '< 3'
   spec.add_dependency 'openid_connect', '~> 1.1'
   spec.add_development_dependency 'coveralls', '~> 0.8'
   spec.add_development_dependency 'faker', '~> 1.6'
@@ -30,6 +38,6 @@ Gem::Specification.new do |spec|
   spec.add_development_dependency 'minitest', '~> 5.1'
   spec.add_development_dependency 'mocha', '~> 1.7'
   spec.add_development_dependency 'rake', '~> 12.0'
-  spec.add_development_dependency 'rubocop', '~> 0.63'
+  spec.add_development_dependency 'rubocop', '~> 1.12'
   spec.add_development_dependency 'simplecov', '~> 0.12'
 end

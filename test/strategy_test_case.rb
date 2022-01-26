@@ -37,6 +37,7 @@ class StrategyTestCase < MiniTest::Test
       request.stubs(:env).returns({})
       request.stubs(:scheme).returns({})
       request.stubs(:ssl?).returns(false)
+      request.stubs(:path).returns('')
     end
   end
 
@@ -46,6 +47,7 @@ class StrategyTestCase < MiniTest::Test
       strategy.options.client_options.secret = @secret
       strategy.stubs(:request).returns(request)
       strategy.stubs(:user_info).returns(user_info)
+      strategy.stubs(:script_name).returns('')
     end
   end
 end

@@ -1,3 +1,6 @@
+Gemspec/RequiredRubyVersion:
+  Enabled: false
+
 LineLength:
   Description: 'Limit lines to 130 characters.'
   Max: 130
@@ -36,7 +39,10 @@ Documentation:
   Enabled: false
 
 Metrics/AbcSize:
-  Max: 50
+  Max: 60
+
+Metrics/ClassLength:
+  Max: 300
 
 Metrics/CyclomaticComplexity:
   Max: 50

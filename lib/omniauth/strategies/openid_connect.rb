@@ -195,7 +195,7 @@ module OmniAuth
       def public_key
         return config.jwks if options.discovery
 
-        key_or_secret
+        key_or_secret || config.jwks
       end
 
       def pkce_authorize_params
@@ -287,6 +287,12 @@ module OmniAuth
 
       def stored_nonce
         session.delete('omniauth.nonce')
+      end
+
+      def script_name
+        return '' if @env.nil?
+
+        super
       end
 
       def session
@@ -382,6 +388,7 @@ module OmniAuth
         attr_accessor :error, :error_reason, :error_uri
 
         def initialize(data)
+          super
           self.error = data[:error]
           self.error_reason = data[:reason]
           self.error_uri = data[:uri]
