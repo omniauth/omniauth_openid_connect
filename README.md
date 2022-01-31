@@ -13,7 +13,7 @@ Originally was [omniauth-openid-connect](https://github.com/jjbohn/omniauth-open
 
 I've forked this repository and launch as separate gem because maintaining of original was dropped.
 
-[![Build Status](https://travis-ci.org/m0n9oose/omniauth_openid_connect.png?branch=master)](https://travis-ci.org/m0n9oose/omniauth_openid_connect)
+[![Build Status](https://github.com/omniauth/omniauth_openid_connect/actions/workflows/main.yml/badge.svg)](https://github.com/omniauth/omniauth_openid_connect/actions/workflows/main.yml)
 
 ## Installation
 
@@ -28,7 +28,7 @@ And then execute:
 Or install it yourself as:
 
     $ gem install omniauth_openid_connect
-    
+
 ## Supported Ruby Versions
 
 OmniAuth::OpenIDConnect is tested under 2.4, 2.5, 2.6, 2.7
