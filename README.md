@@ -1,12 +1,3 @@
-# Maintainers Wanted
-
-This project is looking for maintainers.
-
-Due to lack of using this gem in my projects I have no time to keep it alive.
-Feel free to open an issue if you interested.
-
-_This project is built and maintained 100% voluntarily._
-
 # OmniAuth::OpenIDConnect
 
 Originally was [omniauth-openid-connect](https://github.com/jjbohn/omniauth-openid-connect)
