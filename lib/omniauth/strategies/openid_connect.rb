@@ -62,10 +62,10 @@ module OmniAuth
         code_challenge: proc { |verifier|
           Base64.urlsafe_encode64(
             Digest::SHA2.digest(verifier),
-            padding: false,
-            )
+            padding: false
+          )
         },
-        code_challenge_method: "S256",
+        code_challenge_method: 'S256',
       }
 
       def uid
@@ -186,7 +186,7 @@ module OmniAuth
 
         if options.pkce
           opts.merge!(pkce_authorize_params)
-          session["omniauth.pkce.verifier"] = options.pkce_verifier
+          session['omniauth.pkce.verifier'] = options.pkce_verifier
         end
 
         client.authorization_uri(opts.reject { |_k, v| v.nil? })
@@ -203,15 +203,15 @@ module OmniAuth
 
         # NOTE: see https://tools.ietf.org/html/rfc7636#appendix-A
         {
-          :code_challenge => options.pkce_options[:code_challenge].call(options.pkce_verifier),
-          :code_challenge_method => options.pkce_options[:code_challenge_method],
+          code_challenge: options.pkce_options[:code_challenge].call(options.pkce_verifier),
+          code_challenge_method: options.pkce_options[:code_challenge_method],
         }
       end
 
       def pkce_token_params
         return {} unless options.pkce
 
-        {:code_verifier => session.delete("omniauth.pkce.verifier")}
+        { code_verifier: session.delete('omniauth.pkce.verifier') }
       end
 
       private
@@ -250,7 +250,7 @@ module OmniAuth
         @access_token = client.access_token!(
           scope: (options.scope if options.send_scope_to_token_endpoint),
           client_auth_method: options.client_auth_method,
-          code_verifier: (session.delete("omniauth.pkce.verifier") if options.pkce)
+          code_verifier: (session.delete('omniauth.pkce.verifier') if options.pkce)
         )
 
         verify_id_token!(@access_token.id_token) if configured_response_type == 'code'
