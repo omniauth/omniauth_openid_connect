@@ -58,7 +58,4 @@ Metrics/MethodLength:
 
 AllCops:
   Exclude:
-    - bin/**/*
-    - Rakefile
-    - config/**/*
-    - test/**/*
+    - vendor/bundle/**/*
