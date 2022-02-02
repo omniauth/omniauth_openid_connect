@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 class StrategyTestCase < MiniTest::Test
   class DummyApp
     def call(env); end
@@ -24,9 +26,9 @@ class StrategyTestCase < MiniTest::Test
       given_name: Faker::Name.first_name,
       family_name: Faker::Name.last_name,
       gender: 'female',
-      picture: Faker::Internet.url + '.png',
+      picture: "#{Faker::Internet.url}.png",
       phone_number: Faker::PhoneNumber.phone_number,
-      website: Faker::Internet.url,
+      website: Faker::Internet.url
     )
   end
 
