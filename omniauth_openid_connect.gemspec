@@ -30,7 +30,7 @@ Gem::Specification.new do |spec|
   spec.add_dependency 'addressable', '~> 2.5'
   spec.add_dependency 'omniauth', '>= 1.9', '< 3'
   spec.add_dependency 'openid_connect', '~> 1.1'
-  spec.add_development_dependency 'coveralls', '~> 0.8'
+  #spec.add_development_dependency 'coveralls', '~> 0.8'
   spec.add_development_dependency 'faker', '~> 2.0'
   spec.add_development_dependency 'guard', '~> 2.14'
   spec.add_development_dependency 'guard-bundler', '~> 2.2'

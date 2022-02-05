@@ -1,3 +1,4 @@
+# -*- coding:utf-8 -*-
 # frozen_string_literal: true
 
 require 'addressable/uri'
@@ -36,11 +37,15 @@ module OmniAuth
 
       option :issuer
       option :discovery, false
-      option :client_signing_alg
+      #option :client_signing_alg
+
+      # Required if you set 'discovery:false'.
+      # IdP's public keys. NOT client's.
       option :client_jwk_signing_key
       option :client_x509_signing_key
+
       option :scope, [:openid]
-      option :response_type, 'code' # ['code', 'id_token']
+      option :response_type, 'code' # 'code', ['id_token', 'token']
       option :state
       option :response_mode # [:query, :fragment, :form_post, :web_message]
       option :display, nil # [:page, :popup, :touch, :wap]
@@ -97,6 +102,25 @@ module OmniAuth
         @config ||= ::OpenIDConnect::Discovery::Provider::Config.discover!(options.issuer)
       end
 
+
+      # @override
+      # Called before both of request_phase() and callback_phase()
+      def setup_phase
+        super
+
+        if configured_response_type != 'code' &&
+           configured_response_type != 'id_token token'
+          raise ArgumentError, "Not supported response_type"
+        end
+        if configured_response_type == 'id_token token'
+          if client_options.secret
+            raise ArgumentError, "MUST NOT set client_secret on the Implicit Flow"
+          end
+        end
+      end
+
+
+      # @override
       def request_phase
         options.issuer = issuer if options.issuer.to_s.empty?
         discover!
@@ -115,11 +139,11 @@ module OmniAuth
 
         options.issuer = issuer if options.issuer.nil? || options.issuer.empty?
 
-        verify_id_token!(params['id_token']) if configured_response_type == 'id_token'
+        verify_id_token!(params['id_token']) if configured_response_type == 'id_token token'
         discover!
         client.redirect_uri = redirect_uri
 
-        return id_token_callback_phase if configured_response_type == 'id_token'
+        return implicit_flow_callback_phase() if configured_response_type == 'id_token token'
 
         client.authorization_code = authorization_code
         access_token
@@ -176,13 +200,25 @@ module OmniAuth
         client.authorization_uri(opts.reject { |_k, v| v.nil? })
       end
 
-      def public_key
+
+      # @return [JSON::JWK::Set or JSON::JWK] IdP's RSA public keys. NOT client's.
+      def public_key(kid = nil)
+        # [Security issue] Do not call key_or_secret() here.
+
         return config.jwks if options.discovery
 
-        key_or_secret || config.jwks
+        if options.client_jwk_signing_key
+          return OmniAuth::OpenIDConnect.parse_jwk_key(
+                     options.client_jwk_signing_key, kid)
+        elsif options.client_x509_signing_key
+          return OmniAuth::OpenIDConnect.parse_x509_key(
+                     options.client_x509_signing_key, kid)
+        end
+        raise RuntimeError, "internal error: missing RSA public key"
       end
 
-      private
+
+    private
 
       def issuer
         resource = "#{ client_options.scheme }://#{ client_options.host }"
@@ -268,39 +304,27 @@ module OmniAuth
         super
       end
 
-      def key_or_secret
-        case options.client_signing_alg
+
+      # HMAC-SHA256 の場合は, client_secret を共通鍵とする
+      # RSAの場合は, 認証サーバの公開鍵を使う
+      def key_or_secret header
+        raise TypeError if !header.respond_to?(:[])
+
+        case header['alg'].to_sym
         when :HS256, :HS384, :HS512
-          client_options.secret
+          return client_options.secret
         when :RS256, :RS384, :RS512
-          if options.client_jwk_signing_key
-            parse_jwk_key(options.client_jwk_signing_key)
-          elsif options.client_x509_signing_key
-            parse_x509_key(options.client_x509_signing_key)
-          end
+          return public_key(header['kid'])
+        else
+          # ES256 : ECDSA using P-256 curve and SHA-256 hash
+          raise ArgumentError, "unsupported alg: #{header['alg']}"
         end
       end
 
-      def parse_x509_key(key)
-        OpenSSL::X509::Certificate.new(key).public_key
-      end
 
-      def parse_jwk_key(key)
-        json = JSON.parse(key)
-        return JSON::JWK::Set.new(json['keys']) if json.key?('keys')
+      # [Security issue] Do not use params['redirect_uri']
+      #def redirect_uri
 
-        JSON::JWK.new(json)
-      end
-
-      def decode(str)
-        UrlSafeBase64.decode64(str).unpack1('B*').to_i(2).to_s
-      end
-
-      def redirect_uri
-        return client_options.redirect_uri unless params['redirect_uri']
-
-        "#{ client_options.redirect_uri }?redirect_uri=#{ CGI.escape(params['redirect_uri']) }"
-      end
 
       def encoded_post_logout_redirect_uri
         return unless options.post_logout_redirect_uri
@@ -319,7 +343,16 @@ module OmniAuth
         @logout_path_pattern ||= %r{\A#{Regexp.quote(request_path)}(/logout)}
       end
 
-      def id_token_callback_phase
+
+      # The Implicit Flow:
+      # Get an access token at the same time as id_token. There is a risk that
+      # one of them has been tampered with. (Token Hijacking)
+      # For that reason,
+      # (1) You MUST verify the signature of the id_token by the public key of
+      #     IdP. Instead of choosing the key with the response header, you have
+      #     to use always the public key.
+      # (2) The access token must be validated by the id_token.
+      def implicit_flow_callback_phase
         user_data = decode_id_token(params['id_token']).raw_attributes
         env['omniauth.auth'] = AuthHash.new(
           provider: name,
@@ -339,9 +372,20 @@ module OmniAuth
         false
       end
 
+
+      # 'code', ['id_token', 'token'], or [:id_token, :token]
       def configured_response_type
-        @configured_response_type ||= options.response_type.to_s
+        if !@configured_response_type
+          ary = case options.response_type
+                  when Array; options.response_type
+                  when Symbol; [options.response_type]
+                  else options.response_type.split(/[ \t]+/)
+                end
+          @configured_response_type = ary.sort.join(' ')
+        end
+        return @configured_response_type
       end
+
 
       def verify_id_token!(id_token)
         return unless id_token
