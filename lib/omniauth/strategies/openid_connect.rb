@@ -37,7 +37,7 @@ module OmniAuth
 
       option :issuer
       option :discovery, false
-      #option :client_signing_alg
+      option :client_signing_alg
 
       # Required if you set 'discovery:false'.
       # IdP's public keys. NOT client's.
@@ -135,7 +135,9 @@ module OmniAuth
         raise CallbackError, error: params['error'], reason: error_description, uri: params['error_uri'] if error
         raise CallbackError, error: :csrf_detected, reason: "Invalid 'state' parameter" if invalid_state
 
-        return unless valid_response_type?
+        if configured_response_type == 'code'
+          return unless valid_response_type? 
+        end
 
         options.issuer = issuer if options.issuer.nil? || options.issuer.empty?
 
@@ -307,10 +309,10 @@ module OmniAuth
 
       # HMAC-SHA256 の場合は, client_secret を共通鍵とする
       # RSAの場合は, 認証サーバの公開鍵を使う
-      def key_or_secret header
-        raise TypeError if !header.respond_to?(:[])
+      def key_or_secret header = nil
+        raise TypeError if header && !header.respond_to?(:[])
 
-        case header['alg'].to_sym
+        case header ? header['alg'].to_sym : options.client_signing_alg
         when :HS256, :HS384, :HS512
           return client_options.secret
         when :RS256, :RS384, :RS512
@@ -322,9 +324,11 @@ module OmniAuth
       end
 
 
-      # [Security issue] Do not use params['redirect_uri']
-      #def redirect_uri
+      def redirect_uri
+        return client_options.redirect_uri unless params['redirect_uri']
 
+        "#{ client_options.redirect_uri }?redirect_uri=#{ CGI.escape(params['redirect_uri']) }"
+      end
 
       def encoded_post_logout_redirect_uri
         return unless options.post_logout_redirect_uri
@@ -353,6 +357,11 @@ module OmniAuth
       #     to use always the public key.
       # (2) The access token must be validated by the id_token.
       def implicit_flow_callback_phase
+        if !params['access_token'] || !params['id_token']
+          fail! :missing_id_token,
+                OmniAuth::OpenIDConnect::MissingIdTokenError.new(params['error'])
+        end
+
         user_data = decode_id_token(params['id_token']).raw_attributes
         env['omniauth.auth'] = AuthHash.new(
           provider: name,
@@ -363,6 +372,8 @@ module OmniAuth
         call_app!
       end
 
+
+      # Called only from callback_phase()
       def valid_response_type?
         return true if params.key?(configured_response_type)
 
