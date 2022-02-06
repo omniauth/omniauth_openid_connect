@@ -10,6 +10,7 @@ require 'forwardable'
 
 module OmniAuth
   module Strategies
+    # rubocop:disable Metrics/ClassLength
     class OpenIDConnect
       include OmniAuth::Strategy
       extend Forwardable
@@ -404,6 +405,7 @@ module OmniAuth
         end
       end
     end
+    # rubocop:enable Metrics/ClassLength
   end
 end
 
