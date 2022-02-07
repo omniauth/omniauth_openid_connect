@@ -5,7 +5,7 @@ module OmniAuth
 
     # @param [String or Hash] key_or_hash  PEM形式の証明書データ
     # @raise [OpenSSL::X509::CertificateError] 証明書のフォーマットが不正
-    def self.parse_x509_key key_or_hash, kid
+    def self.parse_x509_key(key_or_hash, kid)
       raise TypeError if !key_or_hash.is_a?(String) && !key_or_hash.is_a?(Hash)
       
       if key_or_hash.is_a?(Hash)
