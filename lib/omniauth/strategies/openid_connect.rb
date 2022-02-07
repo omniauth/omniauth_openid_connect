@@ -1,4 +1,4 @@
-# -*- coding:utf-8 -*-
+# coding:utf-8
 # frozen_string_literal: true
 
 require 'addressable/uri'
@@ -38,7 +38,6 @@ module OmniAuth
       option :issuer
       option :discovery, false
       option :client_signing_alg
-
       # Required if you set 'discovery:false'.
       # IdP's public keys. NOT client's.
       option :client_jwk_signing_key
@@ -103,23 +102,21 @@ module OmniAuth
         @config ||= ::OpenIDConnect::Discovery::Provider::Config.discover!(options.issuer)
       end
 
-
       # @override
       # Called before both of request_phase and callback_phase
       def setup_phase
         super
 
         if configured_response_type != 'code' &&
-           configured_response_type != 'id_token token'
-          raise ArgumentError, "Not supported response_type"
+            configured_response_type != 'id_token token'
+          raise ArgumentError, 'Not supported response_type'
         end
-        if configured_response_type == 'id_token token'
-          if client_options.secret
-            raise ArgumentError, "MUST NOT set client_secret on the Implicit Flow"
-          end
+
+        if configured_response_type == 'id_token token' &&
+            client_options.secret
+          raise ArgumentError, 'MUST NOT set client_secret on the Implicit Flow'
         end
       end
-
 
       # @override
       def request_phase
@@ -136,9 +133,7 @@ module OmniAuth
         raise CallbackError, error: params['error'], reason: error_description, uri: params['error_uri'] if error
         raise CallbackError, error: :csrf_detected, reason: "Invalid 'state' parameter" if invalid_state
 
-        if configured_response_type == 'code'
-          return unless valid_response_type? 
-        end
+        return if configured_response_type == 'code' && !valid_response_type?
 
         options.issuer = issuer if options.issuer.nil? || options.issuer.empty?
 
@@ -146,7 +141,7 @@ module OmniAuth
         discover!
         client.redirect_uri = redirect_uri
 
-        return implicit_flow_callback_phase() if configured_response_type == 'id_token token'
+        return implicit_flow_callback_phase if configured_response_type == 'id_token token'
 
         client.authorization_code = authorization_code
         access_token
@@ -207,25 +202,20 @@ module OmniAuth
         client.authorization_uri(opts.reject { |_k, v| v.nil? })
       end
 
-
       # @return [JSON::JWK::Set or JSON::JWK] IdP's RSA public keys. NOT client's.
       def public_key(kid = nil)
         # [Security issue] Do not call key_or_secret() here.
 
         return config.jwks if options.discovery
 
-        if options.client_jwk_signing_key
-          return OmniAuth::OpenIDConnect.parse_jwk_key(
-                     options.client_jwk_signing_key, kid)
-        elsif options.client_x509_signing_key
-          return OmniAuth::OpenIDConnect.parse_x509_key(
-                     options.client_x509_signing_key, kid)
-        end
-        raise RuntimeError, "internal error: missing RSA public key"
+        return OmniAuth::OpenIDConnect.parse_jwk_key(options.client_jwk_signing_key, kid) if options.client_jwk_signing_key
+
+        return OmniAuth::OpenIDConnect.parse_x509_key(options.client_x509_signing_key, kid) if options.client_x509_signing_key
+
+        raise 'internal error: missing RSA public key'
       end
 
-
-    private
+      private
 
       def issuer
         resource = "#{ client_options.scheme }://#{ client_options.host }"
@@ -311,7 +301,6 @@ module OmniAuth
         super
       end
 
-
       # HMAC-SHA256 の場合は, client_secret を共通鍵とする
       # RSAの場合は, 認証サーバの公開鍵を使う
       def key_or_secret(header = nil)
@@ -319,15 +308,14 @@ module OmniAuth
 
         case header ? header['alg'].to_sym : options.client_signing_alg
         when :HS256, :HS384, :HS512
-          return client_options.secret
+          client_options.secret
         when :RS256, :RS384, :RS512
-          return public_key(header['kid'])
+          public_key(header['kid'])
         else
           # ES256 : ECDSA using P-256 curve and SHA-256 hash
           raise ArgumentError, "unsupported alg: #{header['alg']}"
         end
       end
-
 
       def redirect_uri
         return client_options.redirect_uri unless params['redirect_uri']
@@ -351,7 +339,6 @@ module OmniAuth
       def logout_path_pattern
         @logout_path_pattern ||= %r{\A#{Regexp.quote(request_path)}(/logout)}
       end
-
 
       # The Implicit Flow:
       # Get an access token at the same time as id_token. There is a risk that
@@ -377,7 +364,6 @@ module OmniAuth
         call_app!
       end
 
-
       # Called only from callback_phase()
       def valid_response_type?
         return true if params.key?(configured_response_type)
@@ -388,20 +374,18 @@ module OmniAuth
         false
       end
 
-
       # 'code', ['id_token', 'token'], or [:id_token, :token]
       def configured_response_type
-        if !@configured_response_type
+        unless @configured_response_type
           ary = case options.response_type
-                  when Array; options.response_type
-                  when Symbol; [options.response_type]
-                  else options.response_type.split(/[ \t]+/)
+                when Array then options.response_type
+                when Symbol then [options.response_type]
+                else options.response_type.split(/[ \t]+/)
                 end
           @configured_response_type = ary.sort.join(' ')
         end
-        return @configured_response_type
+        @configured_response_type
       end
-
 
       def verify_id_token!(id_token)
         return unless id_token

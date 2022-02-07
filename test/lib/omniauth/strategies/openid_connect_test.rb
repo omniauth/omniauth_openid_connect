@@ -116,7 +116,6 @@ module OmniAuth
         assert_nil strategy.options.client_options.end_session_endpoint
       end
 
-
       def test_option_acr_values
         strategy.options.client_options[:host] = 'foobar.com'
 
@@ -135,10 +134,13 @@ module OmniAuth
 
       def test_request_phase_with_allowed_params
         strategy.options.issuer = 'example.com'
-        strategy.options.allow_authorize_params = [:name, :logo, :resource]
-        strategy.options.extra_authorize_params = {resource: 'xyz'}
+        strategy.options.allow_authorize_params = %i[name logo resource]
+        strategy.options.extra_authorize_params = { resource: 'xyz' }
         strategy.options.client_options.host = 'example.com'
-        request.stubs(:params).returns('name' => 'example', 'logo' => 'example_logo', 'resource' => 'abc', 'not_allowed' => 'filter_me')
+        request.stubs(:params).returns('name' => 'example',
+                                       'logo' => 'example_logo',
+                                       'resource' => 'abc',
+                                       'not_allowed' => 'filter_me')
 
         assert(strategy.authorize_uri =~ /resource=xyz/, 'URI must contain fixed param resource')
         assert(strategy.authorize_uri =~ /name=example/, 'URI must contain dynamic param name')
@@ -187,7 +189,6 @@ module OmniAuth
         strategy.call!('rack.session' => { 'omniauth.state' => state, 'omniauth.nonce' => nonce })
         strategy.callback_phase
       end
-
 
       def test_callback_phase_with_discovery # rubocop:disable Metrics/AbcSize
         code = SecureRandom.hex(16)
@@ -267,7 +268,6 @@ module OmniAuth
         strategy.expects(:fail!).with(:missing_code, is_a(OmniAuth::OpenIDConnect::MissingCodeError))
         strategy.callback_phase
       end
-
 
       def test_callback_phase_with_timeout
         code = SecureRandom.hex(16)
@@ -514,8 +514,6 @@ module OmniAuth
         strategy.options.client_x509_signing_key = File.read('./test/fixtures/test.crt')
         assert_equal OpenSSL::PKey::RSA, strategy.public_key.class
       end
-
-
     end
   end
 end

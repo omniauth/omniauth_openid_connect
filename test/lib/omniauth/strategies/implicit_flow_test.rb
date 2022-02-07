@@ -1,7 +1,13 @@
+# frozen_string_literal: true
 
+require_relative '../../../test_helper'
+
+module OmniAuth
+  module Strategies
+    class NotYet
       # Implicit Flow
       def test_request_phase_with_response_mode
-        expected_redirect = /^https:\/\/example\.com\/authorize\?client_id=1234&nonce=\w{32}&response_mode=form_post&response_type=id_token&scope=openid&state=\w{32}$/
+        expected_redirect = %r{^https://example\.com/authorize\?client_id=1234&nonce=\w{32}&response_mode=form_post&response_type=id_token&scope=openid&state=\w{32}$}
         strategy.options.issuer = 'example.com'
         strategy.options.response_mode = 'form_post'
         strategy.options.response_type = 'id_token'
@@ -12,7 +18,7 @@
       end
 
       def test_request_phase_with_response_mode_symbol
-        expected_redirect = /^https:\/\/example\.com\/authorize\?client_id=1234&nonce=\w{32}&response_mode=form_post&response_type=id_token&scope=openid&state=\w{32}$/
+        expected_redirect = %r{^https://example\.com/authorize\?client_id=1234&nonce=\w{32}&response_mode=form_post&response_type=id_token&scope=openid&state=\w{32}$}
         strategy.options.issuer = 'example.com'
         strategy.options.response_mode = 'form_post'
         strategy.options.response_type = :id_token
@@ -21,7 +27,6 @@
         strategy.expects(:redirect).with(regexp_matches(expected_redirect))
         strategy.request_phase
       end
-
 
       def test_callback_phase_with_id_token
         code = SecureRandom.hex(16)
@@ -53,7 +58,6 @@
         strategy.callback_phase
       end
 
-
       # Implicit Flow
       def test_callback_phase_without_id_token
         state = SecureRandom.hex(16)
@@ -67,7 +71,6 @@
         strategy.expects(:fail!).with(:missing_id_token, is_a(OmniAuth::OpenIDConnect::MissingIdTokenError))
         strategy.callback_phase
       end
-
 
       # Implicit Flow
       def test_callback_phase_without_id_token_symbol
@@ -83,7 +86,6 @@
         strategy.callback_phase
       end
 
-
       # Implicit Flow
       def test_id_token_auth_hash
         state = SecureRandom.hex(16)
@@ -95,12 +97,12 @@
         id_token.stubs(:verify!).returns(true)
         id_token.stubs(:raw_attributes, :to_h).returns(
           {
-            "iss": "http://server.example.com",
-            "sub": "248289761001",
-            "aud": "s6BhdRkqt3",
-            "nonce": "n-0S6_WzA2Mj",
-            "exp": 1311281970,
-            "iat": 1311280970,
+            "iss": 'http://server.example.com',
+            "sub": '248289761001',
+            "aud": 's6BhdRkqt3',
+            "nonce": 'n-0S6_WzA2Mj',
+            "exp": 1_311_281_970,
+            "iat": 1_311_280_970,
           }
         )
 
@@ -120,3 +122,6 @@
         assert auth_hash.key?('extra')
         assert auth_hash['extra'].key?('raw_info')
       end
+    end
+  end
+end
