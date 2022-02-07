@@ -1,8 +1,10 @@
+# frozen_string_literal: true
+
 require_relative '../../../test_helper'
 
 module OmniAuth
   module Strategies
-    class OpenIDConnectTest < StrategyTestCase
+    class OpenIDConnectTest < StrategyTestCase # rubocop:disable Metrics/ClassLength
       def test_client_options_defaults
         assert_equal 'https', strategy.options.client_options.scheme
         assert_equal 443, strategy.options.client_options.port
@@ -11,7 +13,7 @@ module OmniAuth
       end
 
       def test_request_phase
-        expected_redirect = /^https:\/\/example\.com\/authorize\?client_id=1234&nonce=\w{32}&response_type=code&scope=openid&state=\w{32}$/
+        expected_redirect = %r{^https://example\.com/authorize\?client_id=1234&nonce=\w{32}&response_type=code&scope=openid&state=\w{32}$}
         strategy.options.issuer = 'example.com'
         strategy.options.client_options.host = 'example.com'
         strategy.expects(:redirect).with(regexp_matches(expected_redirect))
@@ -19,7 +21,7 @@ module OmniAuth
       end
 
       def test_logout_phase_with_discovery
-        expected_redirect = %r{^https:\/\/example\.com\/logout$}
+        expected_redirect = %r{^https://example\.com/logout$}
         strategy.options.client_options.host = 'example.com'
         strategy.options.discovery = true
 
@@ -78,7 +80,7 @@ module OmniAuth
       end
 
       def test_request_phase_with_params
-        expected_redirect = /^https:\/\/example\.com\/authorize\?claims_locales=es&client_id=1234&login_hint=john.doe%40example.com&nonce=\w{32}&response_type=code&scope=openid&state=\w{32}&ui_locales=en$/
+        expected_redirect = %r{^https://example\.com/authorize\?claims_locales=es&client_id=1234&login_hint=john.doe%40example.com&nonce=\w{32}&response_type=code&scope=openid&state=\w{32}&ui_locales=en$}
         strategy.options.issuer = 'example.com'
         strategy.options.client_options.host = 'example.com'
         request.stubs(:params).returns('login_hint' => 'john.doe@example.com', 'ui_locales' => 'en', 'claims_locales' => 'es')
@@ -88,7 +90,7 @@ module OmniAuth
       end
 
       def test_request_phase_with_discovery
-        expected_redirect = /^https:\/\/example\.com\/authorization\?client_id=1234&nonce=\w{32}&response_type=code&scope=openid&state=\w{32}$/
+        expected_redirect = %r{^https://example\.com/authorization\?client_id=1234&nonce=\w{32}&response_type=code&scope=openid&state=\w{32}$}
         strategy.options.client_options.host = 'example.com'
         strategy.options.discovery = true
 
@@ -118,17 +120,30 @@ module OmniAuth
       def test_option_acr_values
         strategy.options.client_options[:host] = 'foobar.com'
 
-        assert(!(strategy.authorize_uri =~ /acr_values=/), 'URI must not contain acr_values')
+        refute_match(/acr_values=/, strategy.authorize_uri, 'URI must not contain acr_values')
 
         strategy.options.acr_values = 'urn:some:acr:values:value'
-        assert(strategy.authorize_uri =~ /acr_values=/, 'URI must contain acr_values')
+        assert_match(/acr_values=/, strategy.authorize_uri, 'URI must contain acr_values')
       end
 
       def test_option_custom_attributes
         strategy.options.client_options[:host] = 'foobar.com'
-        strategy.options.extra_authorize_params = {resource: 'xyz'}
+        strategy.options.extra_authorize_params = { resource: 'xyz' }
 
         assert(strategy.authorize_uri =~ /resource=xyz/, 'URI must contain custom params')
+      end
+
+      def test_request_phase_with_allowed_params
+        strategy.options.issuer = 'example.com'
+        strategy.options.allow_authorize_params = [:name, :logo, :resource]
+        strategy.options.extra_authorize_params = {resource: 'xyz'}
+        strategy.options.client_options.host = 'example.com'
+        request.stubs(:params).returns('name' => 'example', 'logo' => 'example_logo', 'resource' => 'abc', 'not_allowed' => 'filter_me')
+
+        assert(strategy.authorize_uri =~ /resource=xyz/, 'URI must contain fixed param resource')
+        assert(strategy.authorize_uri =~ /name=example/, 'URI must contain dynamic param name')
+        assert(strategy.authorize_uri =~ /logo=example_logo/, 'URI must contain dynamic param logo')
+        refute(strategy.authorize_uri =~ /not_allowed=filter_me/, 'URI must filter not allowed param')
       end
 
       def test_uid
@@ -141,7 +156,7 @@ module OmniAuth
         assert_equal user_info.sub, strategy.uid
       end
 
-      def test_callback_phase(session = {}, params = {})
+      def test_callback_phase(_session = {}, _params = {})
         code = SecureRandom.hex(16)
         state = SecureRandom.hex(16)
         nonce = SecureRandom.hex(16)
@@ -174,7 +189,7 @@ module OmniAuth
       end
 
 
-      def test_callback_phase_with_discovery
+      def test_callback_phase_with_discovery # rubocop:disable Metrics/AbcSize
         code = SecureRandom.hex(16)
         state = SecureRandom.hex(16)
         nonce = SecureRandom.hex(16)
@@ -224,7 +239,7 @@ module OmniAuth
         request.stubs(:params).returns('error' => 'invalid_request')
         request.stubs(:path).returns('')
 
-        strategy.call!({'rack.session' => {'omniauth.state' => state, 'omniauth.nonce' => nonce}})
+        strategy.call!({ 'rack.session' => { 'omniauth.state' => state, 'omniauth.nonce' => nonce } })
         strategy.expects(:fail!)
         strategy.callback_phase
       end
@@ -377,7 +392,7 @@ module OmniAuth
             token: access_token.access_token,
             refresh_token: access_token.refresh_token,
             expires_in: access_token.expires_in,
-            scope: access_token.scope
+            scope: access_token.scope,
           },
           strategy.credentials
         )
@@ -385,11 +400,10 @@ module OmniAuth
 
       def test_option_send_nonce
         strategy.options.client_options[:host] = 'foobar.com'
-
-        assert(strategy.authorize_uri =~ /nonce=/, 'URI must contain nonce')
+        assert_match(/nonce/, strategy.authorize_uri, 'URI must contain nonce')
 
         strategy.options.send_nonce = false
-        assert(!(strategy.authorize_uri =~ /nonce=/), 'URI must not contain nonce')
+        refute_match(/nonce/, strategy.authorize_uri, 'URI must not contain nonce')
       end
 
       def test_failure_endpoint_redirect
@@ -399,9 +413,9 @@ module OmniAuth
 
         result = strategy.callback_phase
 
-        assert(result.is_a? Array)
+        assert(result.is_a?(Array))
         assert(result[0] == 302, 'Redirect')
-        assert(result[1]["Location"] =~ /\/auth\/failure/)
+        assert(result[1]['Location'] =~ %r{/auth/failure})
       end
 
       def test_state
@@ -430,7 +444,7 @@ module OmniAuth
       def test_dynamic_state
         # Stub request parameters
         request.stubs(:path).returns('')
-        strategy.call!('rack.session' => { }, QUERY_STRING: { state: 'abc', client_id: '123' } )
+        strategy.call!('rack.session' => {}, QUERY_STRING: { state: 'abc', client_id: '123' })
 
         strategy.options.state = lambda { |env|
           # Get params from request, e.g. CGI.parse(env['QUERY_STRING'])
@@ -475,7 +489,7 @@ module OmniAuth
           {}
         ).returns(success)
 
-        assert(strategy.send :access_token)
+        assert(strategy.send(:access_token))
       end
 
       def test_public_key_with_jwks

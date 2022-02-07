@@ -1,3 +1,11 @@
+# v0.4.0 (02.05.2022)
+
+- Support dynamic parameters to the authorize URI [#90](https://github.com/omniauth/omniauth_openid_connect/pull/90)
+- Upgrade Faker and replace Travis with Github Actions [#102](https://github.com/omniauth/omniauth_openid_connect/pull/102)
+- Make `omniauth_openid_connect` gem compatible with `omniauth v2.0` [#95](https://github.com/omniauth/omniauth_openid_connect/pull/95)
+- Fall back to the discovered jwks when no key specified [#97](https://github.com/omniauth/omniauth_openid_connect/pull/97)
+- Allow updating to omniauth v2 [#88](https://github.com/omniauth/omniauth_openid_connect/pull/88)
+
 # v0.3.5 (07.06.2020)
 
 - bugfix: Info from decoded id_token is not exposed into `request.env['omniauth.auth']` [#61](https://github.com/m0n9oose/omniauth_openid_connect/pull/61)
