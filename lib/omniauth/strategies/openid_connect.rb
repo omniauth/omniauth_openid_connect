@@ -104,7 +104,7 @@ module OmniAuth
 
 
       # @override
-      # Called before both of request_phase() and callback_phase()
+      # Called before both of request_phase and callback_phase
       def setup_phase
         super
 
@@ -309,7 +309,7 @@ module OmniAuth
 
       # HMAC-SHA256 の場合は, client_secret を共通鍵とする
       # RSAの場合は, 認証サーバの公開鍵を使う
-      def key_or_secret header = nil
+      def key_or_secret(header = nil)
         raise TypeError if header && !header.respond_to?(:[])
 
         case header ? header['alg'].to_sym : options.client_signing_alg
