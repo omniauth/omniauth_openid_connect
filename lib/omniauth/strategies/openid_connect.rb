@@ -1,4 +1,3 @@
-# coding:utf-8
 # frozen_string_literal: true
 
 require 'addressable/uri'
@@ -208,9 +207,11 @@ module OmniAuth
 
         return config.jwks if options.discovery
 
-        return OmniAuth::OpenIDConnect.parse_jwk_key(options.client_jwk_signing_key, kid) if options.client_jwk_signing_key
+        return OmniAuth::OpenIDConnect::Util.parse_jwk_key(options.client_jwk_signing_key, kid) if options.client_jwk_signing_key
 
-        return OmniAuth::OpenIDConnect.parse_x509_key(options.client_x509_signing_key, kid) if options.client_x509_signing_key
+        if options.client_x509_signing_key
+          return OmniAuth::OpenIDConnect::Util.parse_x509_key(options.client_x509_signing_key, kid)
+        end
 
         raise 'internal error: missing RSA public key'
       end
@@ -301,8 +302,8 @@ module OmniAuth
         super
       end
 
-      # HMAC-SHA256 の場合は, client_secret を共通鍵とする
-      # RSAの場合は, 認証サーバの公開鍵を使う
+      # For HMAC-SHA256, return client_secret as the common key.
+      # For RSA, return the public key of the authentication server
       def key_or_secret(header = nil)
         raise TypeError if header && !header.respond_to?(:[])
 
@@ -374,7 +375,8 @@ module OmniAuth
         false
       end
 
-      # 'code', ['id_token', 'token'], or [:id_token, :token]
+      # Normalize options.response_type.
+      # @return [String] 'code' or 'id_token token'
       def configured_response_type
         unless @configured_response_type
           ary = case options.response_type
