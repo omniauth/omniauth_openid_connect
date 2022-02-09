@@ -156,10 +156,11 @@ module OmniAuth
 
       def test_request_phase_with_allowed_params
         strategy.options.issuer = 'example.com'
-        strategy.options.allow_authorize_params = [:name, :logo, :resource]
-        strategy.options.extra_authorize_params = {resource: 'xyz'}
+        strategy.options.allow_authorize_params = %i[name logo resource]
+        strategy.options.extra_authorize_params = { resource: 'xyz' }
         strategy.options.client_options.host = 'example.com'
-        request.stubs(:params).returns('name' => 'example', 'logo' => 'example_logo', 'resource' => 'abc', 'not_allowed' => 'filter_me')
+        request.stubs(:params).returns('name' => 'example', 'logo' => 'example_logo', 'resource' => 'abc',
+                                       'not_allowed' => 'filter_me')
 
         assert(strategy.authorize_uri =~ /resource=xyz/, 'URI must contain fixed param resource')
         assert(strategy.authorize_uri =~ /name=example/, 'URI must contain dynamic param name')
