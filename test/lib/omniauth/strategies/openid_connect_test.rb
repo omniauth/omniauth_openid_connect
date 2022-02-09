@@ -514,6 +514,66 @@ module OmniAuth
         strategy.options.client_x509_signing_key = File.read('./test/fixtures/test.crt')
         assert_equal OpenSSL::PKey::RSA, strategy.public_key.class
       end
+
+      def test_setup_phase
+        strategy.options.response_type = 'code'
+        strategy.setup_phase
+      end
+
+      # Not supported yet: https://openid.net/specs/openid-financial-api-part-2-1_0.html
+      def test_setup_phase_not_supported_response_type
+        strategy.options.response_type = 'code id_token'
+        assert_raises ArgumentError do
+          strategy.setup_phase
+        end
+      end
+
+      def test_setup_phase_unnecessary_secret
+        strategy.options.response_type = 'token id_token'
+        strategy.options.client_options.secret = 'hoge'
+        assert_raises ArgumentError do
+          strategy.setup_phase
+        end
+      end
+
+      def test_public_key_missing
+        strategy.options.discovery = false
+        assert_raises RuntimeError do
+          strategy.public_key
+        end
+      end
+
+      def test_script_name
+        assert_equal '', strategy.send(:script_name)
+      end
+
+      def test_key_or_secret
+        assert_raises TypeError do
+          strategy.send(:key_or_secret, 123)
+        end
+        assert_raises ArgumentError do
+          strategy.send(:key_or_secret, { 'alg' => 'hoge' })
+        end
+
+        strategy.options.client_options.secret = 'hoge'
+        h = { 'alg' => :HS256 }
+        assert_equal 'hoge', strategy.send(:key_or_secret, h)
+
+        h = { 'alg' => :RS256, 'kid' => 0 }
+        strategy.options.client_jwk_signing_key = File.read('./test/fixtures/jwks.json')
+        assert_equal JSON::JWK::Set, strategy.send(:key_or_secret, h).class
+      end
+
+      def test_prepare_implicit_flow_callback_phase
+        request.stubs(:params).returns('access_token' => nil)
+        strategy.expects(:fail!)
+        strategy.send(:implicit_flow_callback_phase)
+      end
+
+      def test_configured_response_type
+        strategy.options.response_type = %i[token id_token]
+        assert_equal 'id_token token', strategy.send(:configured_response_type)
+      end
     end
   end
 end

@@ -353,6 +353,7 @@ module OmniAuth
         if !params['access_token'] || !params['id_token']
           fail! :missing_id_token,
                 OmniAuth::OpenIDConnect::MissingIdTokenError.new(params['error'])
+          return
         end
 
         user_data = decode_id_token(params['id_token']).raw_attributes
