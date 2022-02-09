@@ -5,6 +5,7 @@ Originally was [omniauth-openid-connect](https://github.com/jjbohn/omniauth-open
 I've forked this repository and launch as separate gem because maintaining of original was dropped.
 
 [![Build Status](https://github.com/omniauth/omniauth_openid_connect/actions/workflows/main.yml/badge.svg)](https://github.com/omniauth/omniauth_openid_connect/actions/workflows/main.yml)
+[![Coverage Status](https://coveralls.io/repos/github/omniauth/omniauth_openid_connect/badge.svg)](https://coveralls.io/github/omniauth/omniauth_openid_connect)
 
 ## Installation
 

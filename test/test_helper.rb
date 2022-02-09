@@ -1,8 +1,4 @@
-# coding:utf-8
 # frozen_string_literal: true
-
-lib = File.expand_path('../lib', __dir__)
-$LOAD_PATH.unshift(lib) unless $LOAD_PATH.include?(lib)
 
 require 'simplecov'
 require 'minitest/autorun'
@@ -23,7 +19,8 @@ SimpleCov.start do
   end
 end
 
+lib = File.expand_path('../lib', __dir__)
+$LOAD_PATH.unshift(lib) unless $LOAD_PATH.include?(lib)
 require 'omniauth_openid_connect'
 require_relative 'strategy_test_case'
-
 OmniAuth.config.test_mode = true
