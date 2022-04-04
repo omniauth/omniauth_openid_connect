@@ -1,4 +1,4 @@
-# v0.4.0 (02.05.2022)
+# v0.4.0 (06.02.2022)
 
 - Support dynamic parameters to the authorize URI [#90](https://github.com/omniauth/omniauth_openid_connect/pull/90)
 - Upgrade Faker and replace Travis with Github Actions [#102](https://github.com/omniauth/omniauth_openid_connect/pull/102)
