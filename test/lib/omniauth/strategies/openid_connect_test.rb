@@ -568,11 +568,37 @@ module OmniAuth
         assert(strategy.send(:access_token))
       end
 
+      def test_with_no_key_nor_discovery
+        config = ::OpenIDConnect::Discovery::Provider::Config::Response.new(
+          issuer: 'https://example.com/',
+          authorization_endpoint: 'https://example.com/authorization',
+          jwks_uri: 'https://example.com/jwks'
+        )
+        ::OpenIDConnect::Discovery::Provider::Config.stubs(:discover!).with('https://example.com/').returns(config)
+        strategy.options.issuer = 'https://example.com/'
+        strategy.options.discovery = true
+
+        assert_equal config, strategy.public_key_or_config
+      end
+
+      def test_public_key_with_discovery
+        config = ::OpenIDConnect::Discovery::Provider::Config::Response.new(
+          issuer: 'https://example.com/',
+          authorization_endpoint: 'https://example.com/authorization',
+          jwks_uri: 'https://example.com/jwks'
+        )
+        ::OpenIDConnect::Discovery::Provider::Config.stubs(:discover!).with('https://example.com/').returns(config)
+        strategy.options.issuer = 'https://example.com/'
+        strategy.options.discovery = true
+
+        assert_equal config, strategy.public_key_or_config
+      end
+
       def test_public_key_with_jwks
         strategy.options.client_signing_alg = :RS256
         strategy.options.client_jwk_signing_key = File.read('./test/fixtures/jwks.json')
 
-        assert_equal JSON::JWK::Set, strategy.public_key.class
+        assert_equal JSON::JWK::Set, strategy.public_key_or_config.class
       end
 
       def test_public_key_with_jwk
@@ -582,19 +608,19 @@ module OmniAuth
         jwk = jwks['keys'].first
         strategy.options.client_jwk_signing_key = jwk.to_json
 
-        assert_equal JSON::JWK, strategy.public_key.class
+        assert_equal JSON::JWK, strategy.public_key_or_config.class
       end
 
       def test_public_key_with_x509
         strategy.options.client_signing_alg = :RS256
         strategy.options.client_x509_signing_key = File.read('./test/fixtures/test.crt')
-        assert_equal OpenSSL::PKey::RSA, strategy.public_key.class
+        assert_equal OpenSSL::PKey::RSA, strategy.public_key_or_config.class
       end
 
       def test_public_key_with_hmac
         strategy.options.client_options.secret = 'secret'
         strategy.options.client_signing_alg = :HS256
-        assert_equal strategy.options.client_options.secret, strategy.public_key
+        assert_equal strategy.options.client_options.secret, strategy.public_key_or_config
       end
 
       def test_id_token_auth_hash
