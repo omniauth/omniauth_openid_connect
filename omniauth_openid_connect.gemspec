@@ -27,7 +27,6 @@ Gem::Specification.new do |spec|
     'rubygems_mfa_required' => 'true',
   }
 
-  spec.add_dependency 'addressable', '~> 2.5'
   spec.add_dependency 'omniauth', '>= 1.9', '< 3'
   spec.add_dependency 'openid_connect', '~> 1.1'
   spec.add_development_dependency 'faker', '~> 2.0'
