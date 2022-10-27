@@ -40,6 +40,7 @@ module OmniAuth
       option :client_x509_signing_key
       option :scope, [:openid]
       option :response_type, 'code' # ['code', 'id_token']
+      option :require_state, true
       option :state
       option :response_mode # [:query, :fragment, :form_post, :web_message]
       option :display, nil # [:page, :popup, :touch, :wap]
@@ -115,7 +116,7 @@ module OmniAuth
       def callback_phase
         error = params['error_reason'] || params['error']
         error_description = params['error_description'] || params['error_reason']
-        invalid_state = params['state'].to_s.empty? || params['state'] != stored_state
+        invalid_state = (options.require_state && params['state'].to_s.empty?) || params['state'] != stored_state
 
         raise CallbackError, error: params['error'], reason: error_description, uri: params['error_uri'] if error
         raise CallbackError, error: :csrf_detected, reason: "Invalid 'state' parameter" if invalid_state
