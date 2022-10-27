@@ -1,3 +1,7 @@
+# v0.4.1 (06.02.2022)
+
+- Make the state parameter verification optional [#122](https://github.com/omniauth/omniauth_openid_connect/pull/122)
+
 # v0.4.0 (06.02.2022)
 
 - Support dynamic parameters to the authorize URI [#90](https://github.com/omniauth/omniauth_openid_connect/pull/90)
