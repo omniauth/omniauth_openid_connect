@@ -19,9 +19,9 @@ module OmniAuth
       def test_attributes
         instance = OmniAuth::Tara::UserInfo.new(@id_token, @public_key)
 
-        assert_equal("EE10101010005", instance.sub)
-        assert_equal("SMART-ID", instance.last_name)
-        assert_equal("DEMO", instance.given_name)
+        assert_equal('EE10101010005', instance.sub)
+        assert_equal('SMART-ID', instance.last_name)
+        assert_equal('DEMO', instance.given_name)
         assert_equal(instance.name, instance.sub)
       end
     end

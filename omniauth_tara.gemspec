@@ -1,5 +1,6 @@
-# coding: utf-8
-lib = File.expand_path('../lib', __FILE__)
+# frozen_string_literal: true
+
+lib = File.expand_path('lib', __dir__)
 $LOAD_PATH.unshift(lib) unless $LOAD_PATH.include?(lib)
 require 'omniauth/tara/version'
 
@@ -7,9 +8,11 @@ Gem::Specification.new do |spec|
   spec.required_ruby_version = '>= 2.5'
   spec.name = 'omniauth-tara'
   spec.version = OmniAuth::Tara::VERSION
-  spec.authors = ['John Bohn', 'Ilya Shcherbinin', 'Artur Beljajev', 'Maciej Szlosarczyk']
+  spec.authors = ['John Bohn', 'Ilya Shcherbinin', 'Artur Beljajev', 'Maciej Szlosarczyk',
+                  'Sergei Tsõganov']
   spec.email = ['jjbohn@gmail.com', 'm0n9oose@gmail.com',
-                'artur.beljajev@internet.ee', 'maciej.szlosarczyk@eestiinternet.ee']
+                'artur.beljajev@internet.ee', 'maciej.szlosarczyk@eestiinternet.ee',
+                'sergei.tsoganov@internet.ee']
   spec.summary = 'TARA-Doku (https://github.com/e-gov/TARA-Doku) strategy for OmniAuth'
   spec.homepage = 'https://github.com/internetee/omniauth-tara'
   spec.license = 'MIT/X11'
@@ -20,17 +23,17 @@ Gem::Specification.new do |spec|
   spec.require_paths = ['lib']
 
   spec.add_dependency 'addressable', '~> 2.5'
+  spec.add_dependency 'omniauth', '>= 1.9', '< 3'
+  spec.add_dependency 'openid_connect', '~> 1.1'
   spec.add_development_dependency 'coveralls', '~> 0.8'
   spec.add_development_dependency 'faker', '~> 1.6'
   spec.add_development_dependency 'guard', '~> 2.14'
   spec.add_development_dependency 'guard-bundler', '~> 2.1'
   spec.add_development_dependency 'guard-minitest', '~> 2.4'
-  spec.add_runtime_dependency 'omniauth', '>= 1.3', '<2.1'
-  spec.add_dependency 'openid_connect', '~> 1.1'
-  spec.add_development_dependency 'bundler', '~> 1.5'
   spec.add_development_dependency 'minitest', '~> 5.1'
   spec.add_development_dependency 'mocha', '~> 1.7'
   spec.add_development_dependency 'pry', '~> 0.9'
   spec.add_development_dependency 'rake', '~> 12.0'
   spec.add_development_dependency 'simplecov', '~> 0.12'
+  spec.add_development_dependency 'simplecov-lcov', '~> 0.8'
 end

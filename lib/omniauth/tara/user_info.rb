@@ -3,8 +3,7 @@ require 'openid_connect'
 module OmniAuth
   module Tara
     class UserInfo
-      attr_reader :id_token
-      attr_reader :public_key
+      attr_reader :id_token, :public_key
 
       def initialize(id_token, public_key)
         @id_token = id_token
