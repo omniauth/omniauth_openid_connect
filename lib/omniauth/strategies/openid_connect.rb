@@ -248,7 +248,7 @@ module OmniAuth
           client_auth_method: options.client_auth_method,
         }
 
-        token_request_params[:code_verifier] = params[:code_verifier] || session.delete('omniauth.pkce.verifier') if options.pkce
+        token_request_params[:code_verifier] = params['code_verifier'] || session.delete('omniauth.pkce.verifier') if options.pkce
 
         @access_token = client.access_token!(token_request_params)
         verify_id_token!(@access_token.id_token) if configured_response_type == 'code'
