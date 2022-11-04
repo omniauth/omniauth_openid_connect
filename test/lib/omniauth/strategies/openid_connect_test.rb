@@ -237,6 +237,38 @@ module OmniAuth
         strategy.callback_phase
       end
 
+      def test_callback_phase_with_id_token_and_param_provided_nonce # rubocop:disable Metrics/AbcSize
+        code = SecureRandom.hex(16)
+        state = SecureRandom.hex(16)
+        nonce = SecureRandom.hex(16)
+        request.stubs(:params).returns('code' => code, 'state' => state, 'nonce' => nonce)
+        request.stubs(:path).returns('')
+
+        strategy.options.issuer = 'example.com'
+        strategy.options.client_signing_alg = :RS256
+        strategy.options.client_jwk_signing_key = jwks.to_s
+        strategy.options.response_type = 'code'
+
+        strategy.unstub(:user_info)
+        access_token = stub('OpenIDConnect::AccessToken')
+        access_token.stubs(:access_token)
+        access_token.stubs(:refresh_token)
+        access_token.stubs(:expires_in)
+        access_token.stubs(:scope)
+        access_token.stubs(:id_token).returns(jwt.to_s)
+        client.expects(:access_token!).at_least_once.returns(access_token)
+        access_token.expects(:userinfo!).returns(user_info)
+
+        id_token = stub('OpenIDConnect::ResponseObject::IdToken')
+        id_token.stubs(:raw_attributes).returns('sub' => 'sub', 'name' => 'name', 'email' => 'email')
+        id_token.stubs(:verify!).with(issuer: strategy.options.issuer, client_id: @identifier, nonce: nonce).returns(true)
+        id_token.expects(:verify!)
+
+        strategy.expects(:decode_id_token).twice.with(access_token.id_token).returns(id_token)
+        strategy.call!('rack.session' => { 'omniauth.state' => state })
+        strategy.callback_phase
+      end
+
       def test_callback_phase_with_discovery # rubocop:disable Metrics/AbcSize
         state = SecureRandom.hex(16)
 

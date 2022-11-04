@@ -120,10 +120,10 @@ These are the configuration options for the client_options hash of the configura
   property can be used to add the attribute to the token request. Initial value is `true`, which means that the
   scope attribute is included by default.
 
-### Additional notes
+## Additional notes
   * In some cases, you may want to go straight to the callback phase - e.g. when requested by a stateless client, like a mobile app.
   In such example, the session is empty, so you have to forward certain parameters received from the client.
-  Currently supported one is `code_verifier` - simply provide it as the `/callback` request parameter.
+  Currently supported ones are `code_verifier` and `nonce` - simply provide them as the `/callback` request parameters.
 
 For the full low down on OpenID Connect, please check out
 [the spec](http://openid.net/specs/openid-connect-core-1_0.html).

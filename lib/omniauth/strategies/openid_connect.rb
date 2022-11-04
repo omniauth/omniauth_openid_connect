@@ -389,7 +389,7 @@ module OmniAuth
 
         decode_id_token(id_token).verify!(issuer: options.issuer,
                                           client_id: client_options.identifier,
-                                          nonce: stored_nonce)
+                                          nonce: params['nonce'].presence || stored_nonce)
       end
 
       class CallbackError < StandardError
