@@ -21,6 +21,7 @@ class StrategyTestCase < MiniTest::Test
       sub: SecureRandom.hex(16),
       name: Faker::Name.name,
       email: Faker::Internet.email,
+      email_verified: Faker::Boolean.boolean,
       nickname: Faker::Name.first_name,
       preferred_username: Faker::Internet.user_name,
       given_name: Faker::Name.first_name,

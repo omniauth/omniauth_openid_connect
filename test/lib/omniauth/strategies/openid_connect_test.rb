@@ -429,6 +429,7 @@ module OmniAuth
         info = strategy.info
         assert_equal user_info.name, info[:name]
         assert_equal user_info.email, info[:email]
+        assert_equal user_info.email_verified, info[:email_verified]
         assert_equal user_info.preferred_username, info[:nickname]
         assert_equal user_info.given_name, info[:first_name]
         assert_equal user_info.family_name, info[:last_name]
