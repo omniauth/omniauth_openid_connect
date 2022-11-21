@@ -69,6 +69,7 @@ config.omniauth :openid_connect, {
 | pkce_verifier                | Specify a custom PKCE verifier code.                                                                                                                          | no       | A random 128-char string      | Proc.new { SecureRandom.hex(64) }                   |
 | pkce_options                 | Specify a custom implementation of the PKCE code challenge/method.                                                                                            | no       | SHA256(code_challenge) in hex | Proc to customise the code challenge generation     |
 | client_options               | A hash of client options detailed in its own section                                                                                                          | yes      |                               |                                                     |
+| jwt_secret_base64 | For HMAC with SHA2 (e.g. HS256) signing algorithms, specify the base64-encoded secret used to sign the JWT token. Defaults to the OAuth2 client secret if not specified. | no | client_options.secret | "bXlzZWNyZXQ=\n"
 
 ### Client Config Options
 

@@ -1,5 +1,6 @@
 # frozen_string_literal: true
 
+require 'base64'
 require 'timeout'
 require 'net/http'
 require 'open-uri'
@@ -35,7 +36,8 @@ module OmniAuth
 
       option :issuer
       option :discovery, false
-      option :client_signing_alg
+      option :client_signing_alg # Deprecated since we detect what is used to sign the JWT
+      option :jwt_secret_base64
       option :client_jwk_signing_key
       option :client_x509_signing_key
       option :scope, [:openid]
@@ -200,11 +202,17 @@ module OmniAuth
       def public_key
         @public_key ||= if options.discovery
                           config.jwks
-                        elsif key_or_secret
-                          key_or_secret
+                        elsif configured_public_key
+                          configured_public_key
                         elsif client_options.jwks_uri
                           fetch_key
                         end
+      end
+
+      # Some OpenID providers use the OAuth2 client secret as the shared secret, but
+      # Keycloak uses a separate key that's stored inside the database.
+      def secret
+        base64_decoded_jwt_secret || client_options.secret
       end
 
       def pkce_authorize_params(verifier)
@@ -219,6 +227,12 @@ module OmniAuth
 
       def fetch_key
         @fetch_key ||= parse_jwk_key(::OpenIDConnect.http_client.get_content(client_options.jwks_uri))
+      end
+
+      def base64_decoded_jwt_secret
+        return unless options.jwt_secret_base64
+
+        Base64.decode64(options.jwt_secret_base64)
       end
 
       def issuer
@@ -265,8 +279,61 @@ module OmniAuth
         @access_token
       end
 
+      # Unlike ::OpenIDConnect::ResponseObject::IdToken.decode, this
+      # method splits the decoding and verification of JWT into two
+      # steps. First, we decode the JWT without verifying it to
+      # determine the algorithm used to sign. Then, we verify it using
+      # the appropriate public key (e.g. if algorithm is RS256) or
+      # shared secret (e.g. if algorithm is HS256).  This works around a
+      # limitation in the openid_connect gem:
+      # https://github.com/nov/openid_connect/issues/61
       def decode_id_token(id_token)
-        ::OpenIDConnect::ResponseObject::IdToken.decode(id_token, public_key)
+        decoded = JSON::JWT.decode(id_token, :skip_verification)
+        algorithm = decoded.algorithm.to_sym
+
+        keyset =
+          case algorithm
+          when :HS256, :HS384, :HS512
+            secret
+          else
+            public_key
+          end
+
+        decoded.verify!(keyset)
+        ::OpenIDConnect::ResponseObject::IdToken.new(decoded)
+      rescue JSON::JWK::Set::KidNotFound
+        # If the JWT has a key ID (kid), then we know that the set of
+        # keys supplied doesn't contain the one we want, and we're
+        # done. However, if there is no kid, then we try each key
+        # individually to see if one works:
+        # https://github.com/nov/json-jwt/pull/92#issuecomment-824654949
+        raise if decoded&.header&.key?('kid')
+
+        decoded = decode_with_each_key!(id_token, keyset)
+
+        raise unless decoded
+
+        decoded
+      end
+
+      def decode!(id_token, key)
+        ::OpenIDConnect::ResponseObject::IdToken.decode(id_token, key)
+      end
+
+      def decode_with_each_key!(id_token, keyset)
+        return unless keyset.is_a?(JSON::JWK::Set)
+
+        keyset.each do |key|
+          begin
+            decoded = decode!(id_token, key)
+          rescue JSON::JWS::VerificationFailed, JSON::JWS::UnexpectedAlgorithm, JSON::JWS::UnknownAlgorithm
+            next
+          end
+
+          return decoded if decoded
+        end
+
+        nil
       end
 
       def client_options
@@ -308,18 +375,12 @@ module OmniAuth
         super
       end
 
-      def key_or_secret
-        @key_or_secret ||=
-          case options.client_signing_alg&.to_sym
-          when :HS256, :HS384, :HS512
-            client_options.secret
-          when :RS256, :RS384, :RS512
-            if options.client_jwk_signing_key
-              parse_jwk_key(options.client_jwk_signing_key)
-            elsif options.client_x509_signing_key
-              parse_x509_key(options.client_x509_signing_key)
-            end
-          end
+      def configured_public_key
+        @configured_public_key ||= if options.client_jwk_signing_key
+                                     parse_jwk_key(options.client_jwk_signing_key)
+                                   elsif options.client_x509_signing_key
+                                     parse_x509_key(options.client_x509_signing_key)
+                                   end
       end
 
       def parse_x509_key(key)

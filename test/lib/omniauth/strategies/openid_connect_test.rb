@@ -269,6 +269,121 @@ module OmniAuth
         strategy.callback_phase
       end
 
+      def test_callback_phase_with_id_token_no_kid
+        other_rsa_private = OpenSSL::PKey::RSA.generate(2048)
+
+        key = JSON::JWK.new(private_key)
+        other_key = JSON::JWK.new(other_rsa_private)
+        state = SecureRandom.hex(16)
+        request.stubs(:params).returns('id_token' => jwt.to_s, 'state' => state)
+        request.stubs(:path_info).returns('')
+
+        strategy.options.issuer = issuer
+        strategy.options.client_signing_alg = :RS256
+        strategy.options.client_jwk_signing_key = { 'keys' => [other_key, key] }.to_json
+        strategy.options.response_type = 'id_token'
+
+        strategy.unstub(:user_info)
+        strategy.call!('rack.session' => { 'omniauth.state' => state, 'omniauth.nonce' => nonce })
+        strategy.callback_phase
+      end
+
+      def test_callback_phase_with_id_token_with_kid
+        other_rsa_private = OpenSSL::PKey::RSA.generate(2048)
+
+        key = JSON::JWK.new(private_key)
+        other_key = JSON::JWK.new(other_rsa_private)
+        state = SecureRandom.hex(16)
+        jwt_with_kid = JSON::JWT.new(payload).sign(key, :RS256)
+        request.stubs(:params).returns('id_token' => jwt_with_kid.to_s, 'state' => state)
+        request.stubs(:path_info).returns('')
+
+        strategy.options.issuer = issuer
+        strategy.options.client_signing_alg = :RS256
+        strategy.options.client_jwk_signing_key = { 'keys' => [other_key, key] }.to_json
+        strategy.options.response_type = 'id_token'
+
+        strategy.unstub(:user_info)
+        strategy.call!('rack.session' => { 'omniauth.state' => state, 'omniauth.nonce' => nonce })
+        strategy.callback_phase
+      end
+
+      def test_callback_phase_with_id_token_with_kid_and_no_matching_kid
+        other_rsa_private = OpenSSL::PKey::RSA.generate(2048)
+
+        key = JSON::JWK.new(private_key)
+        other_key = JSON::JWK.new(other_rsa_private)
+        state = SecureRandom.hex(16)
+        jwt_with_kid = JSON::JWT.new(payload).sign(key, :RS256)
+        request.stubs(:params).returns('id_token' => jwt_with_kid.to_s, 'state' => state)
+        request.stubs(:path_info).returns('')
+
+        strategy.options.issuer = issuer
+        strategy.options.client_signing_alg = :RS256
+        # We use private_key here instead of the wrapped key, which contains a kid
+        strategy.options.client_jwk_signing_key = { 'keys' => [other_key, private_key] }.to_json
+        strategy.options.response_type = 'id_token'
+
+        strategy.unstub(:user_info)
+        strategy.call!('rack.session' => { 'omniauth.state' => state, 'omniauth.nonce' => nonce })
+
+        assert_raises JSON::JWK::Set::KidNotFound do
+          strategy.callback_phase
+        end
+      end
+
+      def test_callback_phase_with_id_token_with_hs256
+        state = SecureRandom.hex(16)
+        request.stubs(:params).returns('id_token' => jwt_with_hs256.to_s, 'state' => state)
+        request.stubs(:path_info).returns('')
+
+        strategy.options.issuer = issuer
+        strategy.options.client_options.secret = hmac_secret
+        strategy.options.client_signing_alg = :HS256
+        strategy.options.response_type = 'id_token'
+
+        strategy.unstub(:user_info)
+        strategy.call!('rack.session' => { 'omniauth.state' => state, 'omniauth.nonce' => nonce })
+        strategy.callback_phase
+      end
+
+      def test_callback_phase_with_hs256_base64_jwt_secret
+        state = SecureRandom.hex(16)
+        request.stubs(:params).returns('id_token' => jwt_with_hs256.to_s, 'state' => state)
+        request.stubs(:path_info).returns('')
+
+        strategy.options.issuer = issuer
+        strategy.options.jwt_secret_base64 = Base64.encode64(hmac_secret)
+        strategy.options.response_type = 'id_token'
+
+        strategy.unstub(:user_info)
+        strategy.call!('rack.session' => { 'omniauth.state' => state, 'omniauth.nonce' => nonce })
+        strategy.callback_phase
+      end
+
+      def test_callback_phase_with_id_token_no_matching_key
+        rsa_private = OpenSSL::PKey::RSA.generate(2048)
+        other_rsa_private = OpenSSL::PKey::RSA.generate(2048)
+
+        other_key = JSON::JWK.new(other_rsa_private)
+        token = JSON::JWT.new(payload).sign(rsa_private, :RS256).to_s
+        state = SecureRandom.hex(16)
+        request.stubs(:params).returns('id_token' => token, 'state' => state)
+        request.stubs(:path_info).returns('')
+
+        strategy.options.issuer = issuer
+        strategy.options.client_signing_alg = :RS256
+        strategy.options.client_jwk_signing_key = { 'keys' => [other_key] }.to_json
+        strategy.options.response_type = 'id_token'
+
+        strategy.unstub(:user_info)
+        strategy.call!('rack.session' => { 'omniauth.state' => state, 'omniauth.nonce' => nonce })
+
+        assert_raises JSON::JWK::Set::KidNotFound do
+          strategy.callback_phase
+        end
+      end
+
       def test_callback_phase_with_discovery # rubocop:disable Metrics/AbcSize
         state = SecureRandom.hex(16)
 
@@ -699,7 +814,7 @@ module OmniAuth
       def test_public_key_with_hmac
         strategy.options.client_options.secret = 'secret'
         strategy.options.client_signing_alg = :HS256
-        assert_equal strategy.options.client_options.secret, strategy.public_key
+        assert_equal strategy.options.client_options.secret, strategy.secret
       end
 
       def test_id_token_auth_hash
