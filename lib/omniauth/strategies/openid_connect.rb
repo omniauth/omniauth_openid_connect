@@ -195,10 +195,12 @@ module OmniAuth
         client.authorization_uri(opts.reject { |_k, v| v.nil? })
       end
 
-      def public_key
-        return config.jwks if options.discovery
-
-        key_or_secret || config.jwks
+      def public_key_or_config
+        if options.discovery || key_or_secret.blank?
+          config
+        else
+          key_or_secret
+        end
       end
 
       def pkce_authorize_params(verifier)
@@ -256,7 +258,7 @@ module OmniAuth
       end
 
       def decode_id_token(id_token)
-        ::OpenIDConnect::ResponseObject::IdToken.decode(id_token, public_key)
+        ::OpenIDConnect::ResponseObject::IdToken.decode(id_token, public_key_or_config)
       end
 
       def client_options
