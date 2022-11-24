@@ -73,6 +73,7 @@ module OmniAuth
         {
           name: user_info.name,
           email: user_info.email,
+          email_verified: user_info.email_verified,
           nickname: user_info.preferred_username,
           first_name: user_info.given_name,
           last_name: user_info.family_name,
