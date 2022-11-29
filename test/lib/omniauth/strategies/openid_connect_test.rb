@@ -280,7 +280,6 @@ module OmniAuth
 
       def test_callback_phase_with_no_state_without_state_verification # rubocop:disable Metrics/AbcSize
         code = SecureRandom.hex(16)
-        nonce = SecureRandom.hex(16)
 
         strategy.options.require_state = false
 
@@ -325,7 +324,6 @@ module OmniAuth
       def test_callback_phase_with_invalid_state_without_state_verification
         code = SecureRandom.hex(16)
         state = SecureRandom.hex(16)
-        nonce = SecureRandom.hex(16)
 
         strategy.options.require_state = false
 
