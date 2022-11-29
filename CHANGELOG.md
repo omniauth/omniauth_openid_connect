@@ -1,4 +1,4 @@
-# v0.4.1 (06.02.2022)
+# Unreleased
 
 - Make the state parameter verification optional [#122](https://github.com/omniauth/omniauth_openid_connect/pull/122)
 
