@@ -32,8 +32,7 @@ Rails.application.config.middleware.use OmniAuth::Builder do
     end
 
     provider :openid_connect,{
-    #name: somaudex,
-    name: :openid_connect,
+    name: :provider_name,
     scope: [:openid, :email],
     response_type: :code,
     issuer: "https://#{ENV["OIDC_HOST"]}",
@@ -48,7 +47,7 @@ Rails.application.config.middleware.use OmniAuth::Builder do
       authorization_endpoint: "/OpenID/Authorize",
       token_endpoint: "/OpenID/AccessToken",
       jwks_uri: "https://#{ENV["OIDC_HOST"]}/OpenID/Discovery/jwks.json",
-      redirect_uri: "http://{APP_HOST}/#{::Constants::REDIRECT_OIDC_PATH}/callback",
+      redirect_uri: "http://{APP_HOST}/#{::Constants::REDIRECT_OIDC_PATH}/:provider_name/callback",
     }}
   end
 ```
