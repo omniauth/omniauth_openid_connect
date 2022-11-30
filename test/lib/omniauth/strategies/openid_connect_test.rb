@@ -102,7 +102,7 @@ module OmniAuth
         assert_equal user_info.sub, strategy.uid
       end
 
-      def test_callback_phase(_session = {}, _params = {}) # rubocop:disable Metrics/AbcSize
+      def test_callback_phase(_session = {}, _params = {})
         code = SecureRandom.hex(16)
         state = SecureRandom.hex(16)
         request.stubs(:params).returns('code' => code, 'state' => state)

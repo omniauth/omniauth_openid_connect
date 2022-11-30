@@ -210,7 +210,7 @@ module OmniAuth
       def public_key(kid)
         return JSON::JWK::Set::Fetcher.fetch(jwks_uri, kid: kid) if kid.present?
 
-        parse_jwk_key(JSON.load(open(client_options.jwks_uri)))
+        parse_jwk_key(JSON.parse(URI.parse(client_options.jwks_uri).open))
       end
 
       def parse_jwk_key(json)
@@ -341,10 +341,12 @@ module OmniAuth
 
       def verify_id_token!(id_token)
         token_decoded = decode_id_token(id_token)
-    
-        token_decoded.verify!(issuer: options.issuer,
-                                          client_id: client_options.identifier,
-                                          nonce: stored_nonce) 
+
+        token_decoded.verify!(
+          issuer: options.issuer,
+          client_id: client_options.identifier,
+          nonce: stored_nonce
+        )
         token_decoded
       end
 

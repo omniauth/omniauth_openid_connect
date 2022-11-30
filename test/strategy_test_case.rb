@@ -46,7 +46,7 @@ class StrategyTestCase < MiniTest::Test
   end
 
   def public_key
-    @public_key ||= jwks[:keys].first 
+    @public_key ||= jwks[:keys].first
   end
 
   def user_info
