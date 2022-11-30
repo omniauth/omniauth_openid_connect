@@ -29,17 +29,12 @@ module OmniAuth
                               port: 443,
                               authorization_endpoint: '/authorize',
                               token_endpoint: '/token',
-                              userinfo_endpoint: '/userinfo',
-                              jwks_uri: '/jwk',
+                              userinfo_endpoint: nil,
+                              jwks_uri: nil,
                               end_session_endpoint: nil)
-
       option :issuer
-      option :discovery, false
-      option :client_signing_alg
-      option :client_jwk_signing_key
-      option :client_x509_signing_key
       option :scope, [:openid]
-      option :response_type, 'code' # ['code', 'id_token']
+      option :response_type, 'code' # ['code', 'id_token', 'code id_token']
       option :state
       option :response_mode # [:query, :fragment, :form_post, :web_message]
       option :display, nil # [:page, :popup, :touch, :wap]
@@ -65,10 +60,11 @@ module OmniAuth
         code_challenge_method: 'S256',
       }
 
-      def uid
-        user_info.raw_attributes[options.uid_field.to_sym] || user_info.sub
-      end
+      ################################
+      ## Inherits from omniauth gem ##
+      ################################
 
+      # Variables to build env['omniauth.auth']
       info do
         {
           name: user_info.name,
@@ -98,17 +94,12 @@ module OmniAuth
         }
       end
 
-      def client
-        @client ||= ::OpenIDConnect::Client.new(client_options)
-      end
-
-      def config
-        @config ||= ::OpenIDConnect::Discovery::Provider::Config.discover!(options.issuer)
+      def uid
+        user_info.raw_attributes[options.uid_field.to_sym] || user_info.sub
       end
 
       def request_phase
         options.issuer = issuer if options.issuer.to_s.empty?
-        discover!
         redirect authorize_uri
       end
 
@@ -122,16 +113,32 @@ module OmniAuth
 
         return unless valid_response_type?
 
-        options.issuer = issuer if options.issuer.nil? || options.issuer.empty?
-
-        verify_id_token!(params['id_token']) if configured_response_type == 'id_token'
-        discover!
         client.redirect_uri = redirect_uri
 
-        return id_token_callback_phase if configured_response_type == 'id_token'
+        if configured_response_type.include?('code')
+          client.authorization_code = params['code']
+          access_token
+          id_token_from_access_token = access_token.id_token
+        end
 
-        client.authorization_code = authorization_code
-        access_token
+        id_token = id_token_from_access_token || params['id_token']
+
+        # Builds env['omniauth.auth'] from id_token info
+        if id_token.present?
+          verify_id_token!(id_token)
+          user_data = decode_id_token(id_token).raw_attributes
+          env['omniauth.auth'] = AuthHash.new(
+            provider: name,
+            uid: user_data['sub'],
+            info: { name: user_data['name'], email: user_data['email'] },
+            extra: { raw_info: user_data }
+          )
+        end
+
+        # Don't build env['omniauth.auth'] from user info endpoint data
+        return call_app! if client_options.userinfo_endpoint.blank?
+
+        # Builds env['omniauth.auth] from variables
         super
       rescue CallbackError => e
         fail!(e.error, e)
@@ -146,14 +153,19 @@ module OmniAuth
       def other_phase
         if logout_path_pattern.match?(current_path)
           options.issuer = issuer if options.issuer.to_s.empty?
-          discover!
           return redirect(end_session_uri) if end_session_uri
         end
         call_app!
       end
 
-      def authorization_code
-        params['code']
+      ################################
+      ##       Custom methods       ##
+      ################################
+
+      private
+
+      def client
+        @client ||= ::OpenIDConnect::Client.new(client_options)
       end
 
       def end_session_uri
@@ -196,10 +208,16 @@ module OmniAuth
         client.authorization_uri(opts.reject { |_k, v| v.nil? })
       end
 
-      def public_key
-        return config.jwks if options.discovery
+      def public_key(kid)
+        return JSON::JWK::Set::Fetcher.fetch(jwks_uri, kid: kid) if kid.present?
 
-        key_or_secret || config.jwks
+        parse_jwk_key(JSON.load(open(client_options.jwks_uri)))
+      end
+
+      def parse_jwk_key(json)
+        return JSON::JWK::Set.new(json['keys']).first if json.key?('keys')
+
+        JSON::JWK.new(json)
       end
 
       def pkce_authorize_params(verifier)
@@ -208,24 +226,6 @@ module OmniAuth
           code_challenge: options.pkce_options[:code_challenge].call(verifier),
           code_challenge_method: options.pkce_options[:code_challenge_method],
         }
-      end
-
-      private
-
-      def issuer
-        resource = "#{ client_options.scheme }://#{ client_options.host }"
-        resource = "#{ resource }:#{ client_options.port }" if client_options.port
-        ::OpenIDConnect::Discovery::Provider.discover!(resource).issuer
-      end
-
-      def discover!
-        return unless options.discovery
-
-        client_options.authorization_endpoint = config.authorization_endpoint
-        client_options.token_endpoint = config.token_endpoint
-        client_options.userinfo_endpoint = config.userinfo_endpoint
-        client_options.jwks_uri = config.jwks_uri
-        client_options.end_session_endpoint = config.end_session_endpoint if config.respond_to?(:end_session_endpoint)
       end
 
       def user_info
@@ -251,13 +251,14 @@ module OmniAuth
         token_request_params[:code_verifier] = params['code_verifier'] || session.delete('omniauth.pkce.verifier') if options.pkce
 
         @access_token = client.access_token!(token_request_params)
-        verify_id_token!(@access_token.id_token) if configured_response_type == 'code'
 
         @access_token
       end
 
       def decode_id_token(id_token)
-        ::OpenIDConnect::ResponseObject::IdToken.decode(id_token, public_key)
+        jwt = JSON::JWT.decode id_token, :skip_verification
+
+        ::OpenIDConnect::ResponseObject::IdToken.decode(id_token, public_key(jwt.kid))
       end
 
       def client_options
@@ -299,30 +300,6 @@ module OmniAuth
         super
       end
 
-      def key_or_secret
-        case options.client_signing_alg
-        when :HS256, :HS384, :HS512
-          client_options.secret
-        when :RS256, :RS384, :RS512
-          if options.client_jwk_signing_key
-            parse_jwk_key(options.client_jwk_signing_key)
-          elsif options.client_x509_signing_key
-            parse_x509_key(options.client_x509_signing_key)
-          end
-        end
-      end
-
-      def parse_x509_key(key)
-        OpenSSL::X509::Certificate.new(key).public_key
-      end
-
-      def parse_jwk_key(key)
-        json = JSON.parse(key)
-        return JSON::JWK::Set.new(json['keys']) if json.key?('keys')
-
-        JSON::JWK.new(json)
-      end
-
       def decode(str)
         UrlSafeBase64.decode64(str).unpack1('B*').to_i(2).to_s
       end
@@ -348,17 +325,6 @@ module OmniAuth
 
       def logout_path_pattern
         @logout_path_pattern ||= %r{\A#{Regexp.quote(request_path)}(/logout)}
-      end
-
-      def id_token_callback_phase
-        user_data = decode_id_token(params['id_token']).raw_attributes
-        env['omniauth.auth'] = AuthHash.new(
-          provider: name,
-          uid: user_data['sub'],
-          info: { name: user_data['name'], email: user_data['email'] },
-          extra: { raw_info: user_data }
-        )
-        call_app!
       end
 
       def valid_response_type?
