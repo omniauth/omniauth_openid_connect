@@ -1,8 +1,6 @@
 # OmniAuth::OpenIDConnect
 
-Originally was [omniauth-openid-connect](https://github.com/jjbohn/omniauth-openid-connect)
-
-I've forked this repository and launch as separate gem because maintaining of original was dropped.
+Fork of [omniauth-openid-connect](https://github.com/omniauth/omniauth_openid_connect)
 
 [![Build Status](https://github.com/omniauth/omniauth_openid_connect/actions/workflows/main.yml/badge.svg)](https://github.com/omniauth/omniauth_openid_connect/actions/workflows/main.yml)
 [![Coverage Status](https://coveralls.io/repos/github/omniauth/omniauth_openid_connect/badge.svg)](https://coveralls.io/github/omniauth/omniauth_openid_connect)
@@ -11,15 +9,11 @@ I've forked this repository and launch as separate gem because maintaining of or
 
 Add this line to your application's Gemfile:
 
-    gem 'omniauth_openid_connect'
+    gem 'omniauth_openid_connect', git "https://github.com/wakeoTeam/omniauth_openid_connect"
 
 And then execute:
 
     $ bundle
-
-Or install it yourself as:
-
-    $ gem install omniauth_openid_connect
 
 ## Supported Ruby Versions
 
@@ -28,21 +22,35 @@ OmniAuth::OpenIDConnect is tested under 2.5, 2.6, 2.7, 3.0, 3.1
 ## Usage
 
 Example configuration
+
+In `config/initializers/omniauth.rb` file
+
 ```ruby
-config.omniauth :openid_connect, {
-  name: :my_provider,
-  scope: [:openid, :email, :profile, :address],
-  response_type: :code,
-  uid_field: "preferred_username",
-  client_options: {
-    port: 443,
-    scheme: "https",
-    host: "myprovider.com",
-    identifier: ENV["OP_CLIENT_ID"],
-    secret: ENV["OP_SECRET_KEY"],
-    redirect_uri: "http://myapp.com/users/auth/openid_connect/callback",
-  },
-}
+Rails.application.config.middleware.use OmniAuth::Builder do
+    configure do |config|
+        config.path_prefix = ::Constants::REDIRECT_OIDC_PATH
+    end
+
+    provider :openid_connect,{
+    #name: somaudex,
+    name: :openid_connect,
+    scope: [:openid, :email],
+    response_type: :code,
+    issuer: "https://#{ENV["OIDC_HOST"]}",
+    uid_field: "sub",
+    send_nonce: false,
+    client_options: {
+      port: 443,
+      scheme: "https",
+      host: ENV["OIDC_HOST"],
+      identifier: "wakeo",
+      secret: ENV["OIDC_SECRET_KEY"],
+      authorization_endpoint: "/OpenID/Authorize",
+      token_endpoint: "/OpenID/AccessToken",
+      jwks_uri: "https://#{ENV["OIDC_HOST"]}/OpenID/Discovery/jwks.json",
+      redirect_uri: "http://{APP_HOST}/#{::Constants::REDIRECT_OIDC_PATH}/callback",
+    }}
+  end
 ```
 
 ### Options Overview
@@ -51,7 +59,6 @@ config.omniauth :openid_connect, {
 |------------------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------|----------|-------------------------------|-----------------------------------------------------|
 | name                         | Arbitrary string to identify connection and identify it from other openid_connect providers                                                                   | no       | String: openid_connect        | :my_idp                                             |
 | issuer                       | Root url for the authorization server                                                                                                                         | yes      |                               | https://myprovider.com                              |
-| discovery                    | Should OpenID discovery be used. This is recommended if the IDP provides a discovery endpoint. See client config for how to manually enter discovered values. | no       | false                         | one of: true, false                                 |
 | client_auth_method           | Which authentication method to use to authenticate your app with the authorization server                                                                     | no       | Sym: basic                    | "basic", "jwks"                                     |
 | scope                        | Which OpenID scopes to include (:openid is always required)                                                                                                   | no       | Array<sym> [:openid]          | [:openid, :profile, :email]                         |
 | response_type                | Which OAuth2 response type to use with the authorization request                                                                                              | no       | String: code                  | one of: 'code', 'id_token'                          |
@@ -92,9 +99,6 @@ These are the configuration options for the client_options hash of the configura
   configuration exists because you could be using multiple OpenID Connect
   providers in a single app.
 
-  **NOTE**: if you use this gem with Devise you should use `:openid_connect` name,
-  or Devise would route to 'users/auth/:provider' rather than 'users/auth/openid_connect'
-
   * `response_type` tells the authorization server which grant type the application wants to use,
   currently, only `:code` (Authorization Code grant) and `:id_token` (Implicit grant) are valid.
   * If you want to pass `state` parameter by yourself. You can set Proc Object.
@@ -126,12 +130,3 @@ These are the configuration options for the client_options hash of the configura
 
 For the full low down on OpenID Connect, please check out
 [the spec](http://openid.net/specs/openid-connect-core-1_0.html).
-
-## Contributing
-
-1. Fork it ( http://github.com/m0n9oose/omniauth-openid-connect/fork )
-2. Create your feature branch (`git checkout -b my-new-feature`)
-3. Cover your changes with tests and make sure they're green (`bundle install && bundle exec rake test`)
-4. Commit your changes (`git commit -am 'Add some feature'`)
-5. Push to the branch (`git push origin my-new-feature`)
-6. Create new Pull Request
