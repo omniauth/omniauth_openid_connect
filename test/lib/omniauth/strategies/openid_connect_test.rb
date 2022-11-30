@@ -20,55 +20,6 @@ module OmniAuth
         strategy.request_phase
       end
 
-      def test_logout_phase_with_discovery
-        expected_redirect = %r{^https://example\.com/logout$}
-        strategy.options.client_options.host = 'example.com'
-        strategy.options.discovery = true
-
-        issuer = stub('OpenIDConnect::Discovery::Issuer')
-        issuer.stubs(:issuer).returns('https://example.com/')
-        ::OpenIDConnect::Discovery::Provider.stubs(:discover!).returns(issuer)
-
-        config = stub('OpenIDConnect::Discovery::Provder::Config')
-        config.stubs(:authorization_endpoint).returns('https://example.com/authorization')
-        config.stubs(:token_endpoint).returns('https://example.com/token')
-        config.stubs(:userinfo_endpoint).returns('https://example.com/userinfo')
-        config.stubs(:jwks_uri).returns('https://example.com/jwks')
-        config.stubs(:end_session_endpoint).returns('https://example.com/logout')
-        ::OpenIDConnect::Discovery::Provider::Config.stubs(:discover!).with('https://example.com/').returns(config)
-
-        request.stubs(:path_info).returns('/auth/openid_connect/logout')
-        request.stubs(:path).returns('/auth/openid_connect/logout')
-
-        strategy.expects(:redirect).with(regexp_matches(expected_redirect))
-        strategy.other_phase
-      end
-
-      def test_logout_phase_with_discovery_and_post_logout_redirect_uri
-        expected_redirect = 'https://example.com/logout?post_logout_redirect_uri=https%3A%2F%2Fmysite.com'
-        strategy.options.client_options.host = 'example.com'
-        strategy.options.discovery = true
-        strategy.options.post_logout_redirect_uri = 'https://mysite.com'
-
-        issuer = stub('OpenIDConnect::Discovery::Issuer')
-        issuer.stubs(:issuer).returns('https://example.com/')
-        ::OpenIDConnect::Discovery::Provider.stubs(:discover!).returns(issuer)
-
-        config = stub('OpenIDConnect::Discovery::Provder::Config')
-        config.stubs(:authorization_endpoint).returns('https://example.com/authorization')
-        config.stubs(:token_endpoint).returns('https://example.com/token')
-        config.stubs(:userinfo_endpoint).returns('https://example.com/userinfo')
-        config.stubs(:jwks_uri).returns('https://example.com/jwks')
-        config.stubs(:end_session_endpoint).returns('https://example.com/logout')
-        ::OpenIDConnect::Discovery::Provider::Config.stubs(:discover!).with('https://example.com/').returns(config)
-
-        request.stubs(:path_info).returns('/auth/openid_connect/logout')
-        request.stubs(:path).returns('/auth/openid_connect/logout')
-
-        strategy.expects(:redirect).with(expected_redirect)
-        strategy.other_phase
-      end
-
       def test_logout_phase
         strategy.options.issuer = 'example.com'
         strategy.options.client_options.host = 'example.com'
@@ -87,33 +38,6 @@ module OmniAuth
 
         strategy.expects(:redirect).with(regexp_matches(expected_redirect))
         strategy.request_phase
-      end
-
-      def test_request_phase_with_discovery
-        expected_redirect = %r{^https://example\.com/authorization\?client_id=1234&nonce=\w{32}&response_type=code&scope=openid&state=\w{32}$}
-        strategy.options.client_options.host = 'example.com'
-        strategy.options.discovery = true
-
-        issuer = stub('OpenIDConnect::Discovery::Issuer')
-        issuer.stubs(:issuer).returns('https://example.com/')
-        ::OpenIDConnect::Discovery::Provider.stubs(:discover!).returns(issuer)
-
-        config = stub('OpenIDConnect::Discovery::Provder::Config')
-        config.stubs(:authorization_endpoint).returns('https://example.com/authorization')
-        config.stubs(:token_endpoint).returns('https://example.com/token')
-        config.stubs(:userinfo_endpoint).returns('https://example.com/userinfo')
-        config.stubs(:jwks_uri).returns('https://example.com/jwks')
-        ::OpenIDConnect::Discovery::Provider::Config.stubs(:discover!).with('https://example.com/').returns(config)
-
-        strategy.expects(:redirect).with(regexp_matches(expected_redirect))
-        strategy.request_phase
-
-        assert_equal strategy.options.issuer, 'https://example.com/'
-        assert_equal strategy.options.client_options.authorization_endpoint, 'https://example.com/authorization'
-        assert_equal strategy.options.client_options.token_endpoint, 'https://example.com/token'
-        assert_equal strategy.options.client_options.userinfo_endpoint, 'https://example.com/userinfo'
-        assert_equal strategy.options.client_options.jwks_uri, 'https://example.com/jwks'
-        assert_nil strategy.options.client_options.end_session_endpoint
       end
 
       def test_request_phase_with_response_mode
@@ -141,17 +65,17 @@ module OmniAuth
       def test_option_acr_values
         strategy.options.client_options[:host] = 'foobar.com'
 
-        refute_match(/acr_values=/, strategy.authorize_uri, 'URI must not contain acr_values')
+        refute_match(/acr_values=/, strategy.send(:authorize_uri), 'URI must not contain acr_values')
 
         strategy.options.acr_values = 'urn:some:acr:values:value'
-        assert_match(/acr_values=/, strategy.authorize_uri, 'URI must contain acr_values')
+        assert_match(/acr_values=/, strategy.send(:authorize_uri), 'URI must contain acr_values')
       end
 
       def test_option_custom_attributes
         strategy.options.client_options[:host] = 'foobar.com'
         strategy.options.extra_authorize_params = { resource: 'xyz' }
 
-        assert(strategy.authorize_uri =~ /resource=xyz/, 'URI must contain custom params')
+        assert(strategy.send(:authorize_uri) =~ /resource=xyz/, 'URI must contain custom params')
       end
 
       def test_request_phase_with_allowed_params
@@ -162,10 +86,10 @@ module OmniAuth
         request.stubs(:params).returns('name' => 'example', 'logo' => 'example_logo', 'resource' => 'abc',
                                        'not_allowed' => 'filter_me')
 
-        assert(strategy.authorize_uri =~ /resource=xyz/, 'URI must contain fixed param resource')
-        assert(strategy.authorize_uri =~ /name=example/, 'URI must contain dynamic param name')
-        assert(strategy.authorize_uri =~ /logo=example_logo/, 'URI must contain dynamic param logo')
-        refute(strategy.authorize_uri =~ /not_allowed=filter_me/, 'URI must filter not allowed param')
+        assert(strategy.send(:authorize_uri) =~ /resource=xyz/, 'URI must contain fixed param resource')
+        assert(strategy.send(:authorize_uri) =~ /name=example/, 'URI must contain dynamic param name')
+        assert(strategy.send(:authorize_uri) =~ /logo=example_logo/, 'URI must contain dynamic param logo')
+        refute(strategy.send(:authorize_uri) =~ /not_allowed=filter_me/, 'URI must filter not allowed param')
       end
 
       def test_uid
@@ -184,10 +108,8 @@ module OmniAuth
         request.stubs(:params).returns('code' => code, 'state' => state)
         request.stubs(:path).returns('')
 
-        strategy.options.issuer = 'example.com'
-        strategy.options.client_signing_alg = :RS256
-        strategy.options.client_jwk_signing_key = jwks.to_s
         strategy.options.response_type = 'code'
+        strategy.options.client_options.userinfo_endpoint = '/userinfo'
 
         strategy.unstub(:user_info)
         access_token = stub('OpenIDConnect::AccessToken')
@@ -214,9 +136,6 @@ module OmniAuth
         request.stubs(:params).returns('id_token' => jwt.to_s, 'state' => state)
         request.stubs(:path).returns('')
 
-        strategy.options.issuer = 'example.com'
-        strategy.options.client_signing_alg = :RS256
-        strategy.options.client_jwk_signing_key = jwks.to_json
         strategy.options.response_type = 'id_token'
 
         strategy.unstub(:user_info)
@@ -227,52 +146,13 @@ module OmniAuth
         access_token.stubs(:scope)
         access_token.stubs(:id_token).returns(jwt.to_s)
 
+        strategy.stubs(:public_key).with(nil).returns(public_key)
+
         id_token = stub('OpenIDConnect::ResponseObject::IdToken')
         id_token.stubs(:raw_attributes).returns('sub' => 'sub', 'name' => 'name', 'email' => 'email')
         id_token.stubs(:verify!).with(issuer: strategy.options.issuer, client_id: @identifier, nonce: nonce).returns(true)
         ::OpenIDConnect::ResponseObject::IdToken.stubs(:decode).returns(id_token)
         id_token.expects(:verify!)
-
-        strategy.call!('rack.session' => { 'omniauth.state' => state, 'omniauth.nonce' => nonce })
-        strategy.callback_phase
-      end
-
-      def test_callback_phase_with_discovery # rubocop:disable Metrics/AbcSize
-        state = SecureRandom.hex(16)
-
-        request.stubs(:params).returns('code' => jwt.to_s, 'state' => state)
-        request.stubs(:path).returns('')
-
-        strategy.options.client_options.host = 'example.com'
-        strategy.options.discovery = true
-
-        issuer = stub('OpenIDConnect::Discovery::Issuer')
-        issuer.stubs(:issuer).returns('https://example.com/')
-        ::OpenIDConnect::Discovery::Provider.stubs(:discover!).returns(issuer)
-
-        config = stub('OpenIDConnect::Discovery::Provder::Config')
-        config.stubs(:authorization_endpoint).returns('https://example.com/authorization')
-        config.stubs(:token_endpoint).returns('https://example.com/token')
-        config.stubs(:userinfo_endpoint).returns('https://example.com/userinfo')
-        config.stubs(:jwks_uri).returns('https://example.com/jwks')
-        config.stubs(:jwks).returns(JSON::JWK::Set.new(jwks['keys']))
-
-        ::OpenIDConnect::Discovery::Provider::Config.stubs(:discover!).with('https://example.com/').returns(config)
-
-        id_token = stub('OpenIDConnect::ResponseObject::IdToken')
-        id_token.stubs(:raw_attributes).returns('sub' => 'sub', 'name' => 'name', 'email' => 'email')
-        id_token.stubs(:verify!).with(issuer: 'https://example.com/', client_id: @identifier, nonce: nonce).returns(true)
-        ::OpenIDConnect::ResponseObject::IdToken.stubs(:decode).returns(id_token)
-
-        strategy.unstub(:user_info)
-        access_token = stub('OpenIDConnect::AccessToken')
-        access_token.stubs(:access_token)
-        access_token.stubs(:refresh_token)
-        access_token.stubs(:expires_in)
-        access_token.stubs(:scope)
-        access_token.stubs(:id_token).returns(jwt.to_s)
-        client.expects(:access_token!).at_least_once.returns(access_token)
-        access_token.expects(:userinfo!).returns(user_info)
 
         strategy.call!('rack.session' => { 'omniauth.state' => state, 'omniauth.nonce' => nonce })
         strategy.callback_phase
@@ -462,10 +342,10 @@ module OmniAuth
 
       def test_option_send_nonce
         strategy.options.client_options[:host] = 'foobar.com'
-        assert_match(/nonce/, strategy.authorize_uri, 'URI must contain nonce')
+        assert_match(/nonce/, strategy.send(:authorize_uri), 'URI must contain nonce')
 
         strategy.options.send_nonce = false
-        refute_match(/nonce/, strategy.authorize_uri, 'URI must not contain nonce')
+        refute_match(/nonce/, strategy.send(:authorize_uri), 'URI must not contain nonce')
       end
 
       def test_failure_endpoint_redirect
@@ -553,33 +433,6 @@ module OmniAuth
         assert(strategy.send(:access_token))
       end
 
-      def test_public_key_with_jwks
-        strategy.options.client_signing_alg = :RS256
-        strategy.options.client_jwk_signing_key = jwks.to_json
-
-        assert_equal JSON::JWK::Set, strategy.public_key.class
-      end
-
-      def test_public_key_with_jwk
-        strategy.options.client_signing_alg = :RS256
-        jwk = jwks[:keys].first
-        strategy.options.client_jwk_signing_key = jwk.to_json
-
-        assert_equal JSON::JWK, strategy.public_key.class
-      end
-
-      def test_public_key_with_x509
-        strategy.options.client_signing_alg = :RS256
-        strategy.options.client_x509_signing_key = File.read('./test/fixtures/test.crt')
-        assert_equal OpenSSL::PKey::RSA, strategy.public_key.class
-      end
-
-      def test_public_key_with_hmac
-        strategy.options.client_options.secret = 'secret'
-        strategy.options.client_signing_alg = :HS256
-        assert_equal strategy.options.client_options.secret, strategy.public_key
-      end
-
       def test_id_token_auth_hash
         state = SecureRandom.hex(16)
         strategy.options.response_type = 'id_token'
@@ -612,14 +465,14 @@ module OmniAuth
         # test pkce disabled
         strategy.options.pkce = false
 
-        assert((strategy.authorize_uri !~ /code_challenge=/), 'URI must not contain code challenge param')
-        assert((strategy.authorize_uri !~ /code_challenge_method=/), 'URI must not contain code challenge method param')
+        assert((strategy.send(:authorize_uri) !~ /code_challenge=/), 'URI must not contain code challenge param')
+        assert((strategy.send(:authorize_uri) !~ /code_challenge_method=/), 'URI must not contain code challenge method param')
 
         # test pkce enabled with default opts
         strategy.options.pkce = true
 
-        assert(strategy.authorize_uri =~ /code_challenge=/, 'URI must contain code challenge param')
-        assert(strategy.authorize_uri =~ /code_challenge_method=/, 'URI must contain code challenge method param')
+        assert(strategy.send(:authorize_uri) =~ /code_challenge=/, 'URI must contain code challenge param')
+        assert(strategy.send(:authorize_uri) =~ /code_challenge_method=/, 'URI must contain code challenge method param')
 
         # test pkce with custom verifier code
         strategy.options.pkce_verifier = proc { 'dummy_verifier' }
@@ -628,7 +481,7 @@ module OmniAuth
           padding: false
         )
 
-        assert(strategy.authorize_uri =~ /#{Regexp.quote(code_challenge_value)}/, 'URI must contain code challenge value')
+        assert(strategy.send(:authorize_uri) =~ /#{Regexp.quote(code_challenge_value)}/, 'URI must contain code challenge value')
 
         # test pkce with custom options and plain text code
         strategy.options.pkce_options =
@@ -637,7 +490,7 @@ module OmniAuth
             code_challenge_method: 'plain',
           }
 
-        assert(strategy.authorize_uri =~ /#{Regexp.quote(strategy.options.pkce_verifier.call)}/,
+        assert(strategy.send(:authorize_uri) =~ /#{Regexp.quote(strategy.options.pkce_verifier.call)}/,
                'URI must contain code challenge value')
       end
     end

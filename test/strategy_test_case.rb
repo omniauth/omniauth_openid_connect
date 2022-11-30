@@ -15,7 +15,7 @@ class StrategyTestCase < MiniTest::Test
   end
 
   def client
-    strategy.client
+    strategy.send(:client)
   end
 
   def payload
@@ -43,6 +43,10 @@ class StrategyTestCase < MiniTest::Test
       keyset = JSON::JWK::Set.new(key)
       { keys: keyset }
     end
+  end
+
+  def public_key
+    @public_key ||= jwks[:keys].first 
   end
 
   def user_info

@@ -125,8 +125,7 @@ module OmniAuth
 
         # Builds env['omniauth.auth'] from id_token info
         if id_token.present?
-          verify_id_token!(id_token)
-          user_data = decode_id_token(id_token).raw_attributes
+          user_data = verify_id_token!(id_token).raw_attributes
           env['omniauth.auth'] = AuthHash.new(
             provider: name,
             uid: user_data['sub'],
@@ -341,11 +340,12 @@ module OmniAuth
       end
 
       def verify_id_token!(id_token)
-        return unless id_token
-
-        decode_id_token(id_token).verify!(issuer: options.issuer,
+        token_decoded = decode_id_token(id_token)
+    
+        token_decoded.verify!(issuer: options.issuer,
                                           client_id: client_options.identifier,
-                                          nonce: stored_nonce)
+                                          nonce: stored_nonce) 
+        token_decoded
       end
 
       class CallbackError < StandardError
