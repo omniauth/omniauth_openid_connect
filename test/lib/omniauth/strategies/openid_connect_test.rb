@@ -522,6 +522,7 @@ module OmniAuth
         strategy.options.issuer = 'example.com'
         strategy.options.client_signing_alg = :RS256
         strategy.options.client_jwk_signing_key = jwks.to_json
+        strategy.options.expires_latency = 60
 
         id_token = stub('OpenIDConnect::ResponseObject::IdToken')
         id_token.stubs(:verify!).returns(true)
@@ -530,13 +531,19 @@ module OmniAuth
         access_token = stub('OpenIDConnect::AccessToken')
         access_token.stubs(:access_token).returns(SecureRandom.hex(16))
         access_token.stubs(:refresh_token).returns(SecureRandom.hex(16))
-        access_token.stubs(:expires_in).returns(Time.now)
+        access_token.stubs(:expires_in).returns(3599)
         access_token.stubs(:scope).returns('openidconnect')
         access_token.stubs(:id_token).returns(jwt.to_s)
 
         client.expects(:access_token!).returns(access_token)
         access_token.expects(:refresh_token).returns(access_token.refresh_token)
         access_token.expects(:expires_in).returns(access_token.expires_in)
+
+        start = Time.now.to_i + access_token.expires_in - 60
+        creds = strategy.credentials
+        stop  = Time.now.to_i + access_token.expires_in - 60
+        expires_at = creds.delete(:expires_at)
+        assert_includes start..stop, expires_at
 
         assert_equal(
           {
@@ -546,7 +553,7 @@ module OmniAuth
             expires_in: access_token.expires_in,
             scope: access_token.scope,
           },
-          strategy.credentials
+          creds
         )
       end
 
