@@ -1,6 +1,10 @@
-# Unreleased
+# v0.5.0 (26.12.2022)
 
+- Support the "nonce" parameter forwarding without a session [#130](https://github.com/omniauth/omniauth_openid_connect/pull/130)
+- Fetch key from JWKS URI if available [#133](https://github.com/omniauth/omniauth_openid_connect/pull/133)
 - Make the state parameter verification optional [#122](https://github.com/omniauth/omniauth_openid_connect/pull/122)
+- Add email_verified claim in user info [#131](https://github.com/omniauth/omniauth_openid_connect/pull/131)
+- Add PKCE verification support [#128](https://github.com/omniauth/omniauth_openid_connect/pull/128)
 
 # v0.4.0 (06.02.2022)
 
