@@ -361,6 +361,23 @@ module OmniAuth
         strategy.callback_phase
       end
 
+      def test_callback_phase_with_mismatched_signing_algorithm
+        state = SecureRandom.hex(16)
+        request.stubs(:params).returns('id_token' => jwt_with_hs512.to_s, 'state' => state)
+        request.stubs(:path_info).returns('')
+
+        strategy.options.issuer = issuer
+        strategy.options.client_options.secret = hmac_secret
+        strategy.options.client_signing_alg = :HS256
+        strategy.options.response_type = 'id_token'
+
+        strategy.unstub(:user_info)
+        strategy.call!('rack.session' => { 'omniauth.state' => state, 'omniauth.nonce' => nonce })
+
+        strategy.expects(:fail!).with(:invalid_jwt_algorithm, is_a(OmniAuth::Strategies::OpenIDConnect::CallbackError))
+        strategy.callback_phase
+      end
+
       def test_callback_phase_with_id_token_no_matching_key
         rsa_private = OpenSSL::PKey::RSA.generate(2048)
         other_rsa_private = OpenSSL::PKey::RSA.generate(2048)
