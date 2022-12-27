@@ -36,7 +36,7 @@ module OmniAuth
 
       option :issuer
       option :discovery, false
-      option :client_signing_alg # Deprecated since we detect what is used to sign the JWT
+      option :client_signing_alg
       option :jwt_secret_base64
       option :client_jwk_signing_key
       option :client_x509_signing_key
@@ -291,6 +291,8 @@ module OmniAuth
         decoded = JSON::JWT.decode(id_token, :skip_verification)
         algorithm = decoded.algorithm.to_sym
 
+        validate_client_algorithm!(algorithm)
+
         keyset =
           case algorithm
           when :HS256, :HS384, :HS512
@@ -314,6 +316,18 @@ module OmniAuth
         raise unless decoded
 
         decoded
+      end
+
+      # If client_signing_alg is specified, we check that the returned JWT
+      # matches the expected algorithm. If not, we reject it.
+      def validate_client_algorithm!(algorithm)
+        client_signing_alg = options.client_signing_alg&.to_sym
+
+        return unless client_signing_alg
+        return if algorithm == client_signing_alg
+
+        reason = "Received JWT is signed with #{algorithm}, but client_singing_alg is configured for #{client_signing_alg}"
+        raise CallbackError, error: :invalid_jwt_algorithm, reason: reason, uri: params['error_uri']
       end
 
       def decode!(id_token, key)
