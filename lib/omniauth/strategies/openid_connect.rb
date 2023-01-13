@@ -372,7 +372,7 @@ module OmniAuth
       end
 
       def valid_response_type?
-        return true if configured_response_types.all? { |key| params.key?(key) }
+        return true if configured_response_types.all? { |key| params[key].present? }
 
         configured_response_type, * = configured_response_types
 
