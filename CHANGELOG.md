@@ -1,3 +1,7 @@
+# v0.6.0 (21.01.2023)
+
+- Support verification of HS256-signed JWTs (https://github.com/omniauth/omniauth_openid_connect/pull/134)
+
 # v0.5.0 (26.12.2022)
 
 - Support the "nonce" parameter forwarding without a session [#130](https://github.com/omniauth/omniauth_openid_connect/pull/130)
