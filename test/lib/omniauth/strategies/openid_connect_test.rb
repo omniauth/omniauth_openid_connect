@@ -142,7 +142,7 @@ module OmniAuth
         expected_redirect = %r{^https://example\.com/authorize\?client_id=1234&nonce=\w{32}&response_mode=form_post&response_type=code%20id_token&scope=openid&state=\w{32}$}
         strategy.options.issuer = 'example.com'
         strategy.options.response_mode = 'form_post'
-        strategy.options.response_type = ['code', 'id_token']
+        strategy.options.response_type = %w[code id_token]
         strategy.options.client_options.host = 'example.com'
 
         strategy.expects(:redirect).with(regexp_matches(expected_redirect))
@@ -153,7 +153,7 @@ module OmniAuth
         expected_redirect = %r{^https://example\.com/authorize\?client_id=1234&nonce=\w{32}&response_mode=form_post&response_type=code%20id_token&scope=openid&state=\w{32}$}
         strategy.options.issuer = 'example.com'
         strategy.options.response_mode = 'form_post'
-        strategy.options.response_type = [:code, :id_token]
+        strategy.options.response_type = %i[code id_token]
         strategy.options.client_options.host = 'example.com'
 
         strategy.expects(:redirect).with(regexp_matches(expected_redirect))
@@ -482,7 +482,7 @@ module OmniAuth
         state = SecureRandom.hex(16)
         request.stubs(:params).returns('state' => state)
         request.stubs(:path).returns('')
-        strategy.options.response_type = ['code', 'id_token']
+        strategy.options.response_type = %w[code id_token]
 
         strategy.call!('rack.session' => { 'omniauth.state' => state, 'omniauth.nonce' => nonce })
 
@@ -494,7 +494,7 @@ module OmniAuth
         state = SecureRandom.hex(16)
         request.stubs(:params).returns('state' => state)
         request.stubs(:path).returns('')
-        strategy.options.response_type = [:code, :id_token]
+        strategy.options.response_type = %i[code id_token]
 
         strategy.call!('rack.session' => { 'omniauth.state' => state, 'omniauth.nonce' => nonce })
 
