@@ -68,6 +68,8 @@ module OmniAuth
         code_challenge_method: 'S256',
       }
 
+      option :logout_path, '/logout'
+
       def uid
         user_info.raw_attributes[options.uid_field.to_sym] || user_info.sub
       end
@@ -432,7 +434,7 @@ module OmniAuth
       end
 
       def logout_path_pattern
-        @logout_path_pattern ||= %r{\A#{Regexp.quote(request_path)}(/logout)}
+        @logout_path_pattern ||= %r{\A#{Regexp.quote(request_path)}#{logout_path}}
       end
 
       def id_token_callback_phase
