@@ -70,6 +70,7 @@ config.omniauth :openid_connect, {
 | pkce_options                 | Specify a custom implementation of the PKCE code challenge/method.                                                                                            | no       | SHA256(code_challenge) in hex | Proc to customise the code challenge generation     |
 | client_options               | A hash of client options detailed in its own section                                                                                                          | yes      |                               |                                                     |
 | jwt_secret_base64 | For HMAC with SHA2 (e.g. HS256) signing algorithms, specify the base64-encoded secret used to sign the JWT token. Defaults to the OAuth2 client secret if not specified. | no | client_options.secret | "bXlzZWNyZXQ=\n"
+| logout_path | The log out is only triggered when the request path ends on this path | no | '/logout' | '/sign_out'
 
 ### Client Config Options
 
