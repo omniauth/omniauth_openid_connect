@@ -434,7 +434,7 @@ module OmniAuth
       end
 
       def logout_path_pattern
-        @logout_path_pattern ||= %r{\A#{Regexp.quote(request_path)}#{logout_path}}
+        @logout_path_pattern ||= %r{\A#{Regexp.quote(request_path)}#{options.logout_path}}
       end
 
       def id_token_callback_phase
