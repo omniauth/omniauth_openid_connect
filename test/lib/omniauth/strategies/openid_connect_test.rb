@@ -69,6 +69,17 @@ module OmniAuth
         strategy.other_phase
       end
 
+      def test_logout_phase_with_logout_path
+        strategy.options.issuer = 'example.com'
+        strategy.options.client_options.host = 'example.com'
+        strategy.options.logout_path = '/sign_out'
+
+        request.stubs(:path).returns('/auth/openid_connect/sign_out')
+
+        strategy.expects(:call_app!)
+        strategy.other_phase
+      end
+
       def test_logout_phase
         strategy.options.issuer = 'example.com'
         strategy.options.client_options.host = 'example.com'
