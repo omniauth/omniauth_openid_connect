@@ -340,7 +340,7 @@ module OmniAuth
         keyset.each do |key|
           begin
             decoded = decode!(id_token, key)
-          rescue JSON::JWS::VerificationFailed, JSON::JWS::UnexpectedAlgorithm, JSON::JWS::UnknownAlgorithm
+          rescue JSON::JWS::VerificationFailed, JSON::JWS::UnexpectedAlgorithm, JSON::JWK::UnknownAlgorithm
             next
           end
 
