@@ -1,3 +1,7 @@
+# v0.6.1 (22.02.2023)
+
+- Fix uninitialized constant error (https://github.com/omniauth/omniauth_openid_connect/pull/147)
+
 # v0.6.0 (21.01.2023)
 
 - Support verification of HS256-signed JWTs (https://github.com/omniauth/omniauth_openid_connect/pull/134)
