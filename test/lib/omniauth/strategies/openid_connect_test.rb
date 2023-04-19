@@ -520,10 +520,14 @@ module OmniAuth
         strategy.options.client_options.jwks_uri = 'https://jwks.example.com'
         strategy.options.response_type = 'id_token'
 
-        HTTPClient
-          .any_instance.stubs(:get_content)
-          .with(strategy.options.client_options.jwks_uri)
-          .returns(jwks.to_json)
+        ::OpenIDConnect.stubs(:http_client)
+                       .returns(
+                         Faraday.new do |builder|
+                           builder.adapter :test do |stubs|
+                             stubs.get(strategy.options.client_options.jwks_uri) { [200, {}, jwks.to_json] }
+                           end
+                         end
+                       )
 
         strategy.unstub(:user_info)
         access_token = stub('OpenIDConnect::AccessToken')
@@ -799,8 +803,7 @@ module OmniAuth
           access_token: 'test_access_token',
           id_token: jwt.to_s,
           token_type: 'Bearer',
-        }.to_json
-        success = Struct.new(:status, :body).new(200, json_response)
+        }
 
         request.stubs(:path).returns('')
         strategy.call!('rack.session' => { 'omniauth.state' => state, 'omniauth.nonce' => nonce })
@@ -809,11 +812,19 @@ module OmniAuth
         id_token.stubs(:verify!).with(issuer: strategy.options.issuer, client_id: @identifier, nonce: nonce).returns(true)
         ::OpenIDConnect::ResponseObject::IdToken.stubs(:decode).returns(id_token)
 
-        HTTPClient.any_instance.stubs(:post).with(
-          "#{ opts.scheme }://#{ opts.host }:#{ opts.port }#{ opts.token_endpoint }",
-          { scope: 'openid', grant_type: :client_credentials, client_id: @identifier, client_secret: @secret },
-          {}
-        ).returns(success)
+        ::Rack::OAuth2.stubs(:http_client)
+                      .returns(
+                        Faraday.new do |builder|
+                          builder.adapter :test do |stubs|
+                            stubs.post(
+                              "#{ opts.scheme }://#{ opts.host }:#{ opts.port }#{ opts.token_endpoint }",
+                              { scope: 'openid', grant_type: :client_credentials, client_id: @identifier, client_secret: @secret }
+                            ) do
+                              [200, {}, json_response]
+                            end
+                          end
+                        end
+                      )
 
         assert(strategy.send(:access_token))
       end
