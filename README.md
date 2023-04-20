@@ -23,7 +23,7 @@ Or install it yourself as:
 
 ## Supported Ruby Versions
 
-OmniAuth::OpenIDConnect is tested under 2.5, 2.6, 2.7, 3.0, 3.1
+OmniAuth::OpenIDConnect is tested under 2.7, 3.0, 3.1, 3.2
 
 ## Usage
 
