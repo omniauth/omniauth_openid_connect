@@ -1,5 +1,9 @@
 # Unreleased
 
+# v0.7.1 (26.04.2023)
+
+- Fix handling of JWKS response (https://github.com/omniauth/omniauth_openid_connect/pull/157)
+
 # v0.7.0 (25.04.2023)
 
 - Update openid_connect to 2.2 (https://github.com/omniauth/omniauth_openid_connect/pull/153)
