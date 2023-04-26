@@ -524,7 +524,7 @@ module OmniAuth
                        .returns(
                          Faraday.new do |builder|
                            builder.adapter :test do |stubs|
-                             stubs.get(strategy.options.client_options.jwks_uri) { [200, {}, jwks.to_json] }
+                             stubs.get(strategy.options.client_options.jwks_uri) { [200, {}, JSON.parse(JSON.generate(jwks))] }
                            end
                          end
                        )
