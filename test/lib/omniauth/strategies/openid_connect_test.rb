@@ -520,14 +520,10 @@ module OmniAuth
         strategy.options.client_options.jwks_uri = 'https://jwks.example.com'
         strategy.options.response_type = 'id_token'
 
-        ::OpenIDConnect.stubs(:http_client)
-                       .returns(
-                         Faraday.new do |builder|
-                           builder.adapter :test do |stubs|
-                             stubs.get(strategy.options.client_options.jwks_uri) { [200, {}, jwks.to_json] }
-                           end
-                         end
-                       )
+        stub_request(:get, strategy.options.client_options.jwks_uri).to_return(
+          body: jwks.to_json,
+          headers: { 'Content-Type' => 'application/json' }
+        )
 
         strategy.unstub(:user_info)
         access_token = stub('OpenIDConnect::AccessToken')
@@ -812,19 +808,13 @@ module OmniAuth
         id_token.stubs(:verify!).with(issuer: strategy.options.issuer, client_id: @identifier, nonce: nonce).returns(true)
         ::OpenIDConnect::ResponseObject::IdToken.stubs(:decode).returns(id_token)
 
-        ::Rack::OAuth2.stubs(:http_client)
-                      .returns(
-                        Faraday.new do |builder|
-                          builder.adapter :test do |stubs|
-                            stubs.post(
-                              "#{ opts.scheme }://#{ opts.host }:#{ opts.port }#{ opts.token_endpoint }",
-                              { scope: 'openid', grant_type: :client_credentials, client_id: @identifier, client_secret: @secret }
-                            ) do
-                              [200, {}, json_response]
-                            end
-                          end
-                        end
-                      )
+        url = "#{ opts.scheme }://#{ opts.host }:#{ opts.port }#{ opts.token_endpoint }"
+        body = { scope: 'openid', grant_type: 'client_credentials', client_id: @identifier, client_secret: @secret }
+
+        stub_request(:post, url).with(body: body).to_return(
+          body: json_response.to_json,
+          headers: { 'Content-Type' => 'application/json' }
+        )
 
         assert(strategy.send(:access_token))
       end

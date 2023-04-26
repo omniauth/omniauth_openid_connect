@@ -404,7 +404,7 @@ module OmniAuth
       end
 
       def parse_jwk_key(key)
-        json = JSON.parse(key)
+        json = key.is_a?(String) ? JSON.parse(key) : key
         return JSON::JWK::Set.new(json['keys']) if json.key?('keys')
 
         JSON::JWK.new(json)
