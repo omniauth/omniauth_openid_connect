@@ -129,11 +129,11 @@ module OmniAuth
 
         options.issuer = issuer if options.issuer.nil? || options.issuer.empty?
 
-        verify_id_token!(params['id_token']) if configured_response_type == 'id_token'
+        verify_id_token!(params['id_token']) if configured_response_types.include?('id_token')
         discover!
         client.redirect_uri = redirect_uri
 
-        return id_token_callback_phase if configured_response_type == 'id_token'
+        return id_token_callback_phase if configured_response_types.include?('id_token')
 
         client.authorization_code = authorization_code
         access_token
@@ -276,7 +276,7 @@ module OmniAuth
         token_request_params[:code_verifier] = params['code_verifier'] || session.delete('omniauth.pkce.verifier') if options.pkce
 
         @access_token = client.access_token!(token_request_params)
-        verify_id_token!(@access_token.id_token) if configured_response_type == 'code'
+        verify_id_token!(@access_token.id_token) if configured_response_types.include?('code')
 
         @access_token
       end
@@ -449,7 +449,9 @@ module OmniAuth
       end
 
       def valid_response_type?
-        return true if params.key?(configured_response_type)
+        return true if configured_response_types.all? { |key| params[key].present? }
+
+        configured_response_type, * = configured_response_types
 
         error_attrs = RESPONSE_TYPE_EXCEPTIONS[configured_response_type]
         fail!(error_attrs[:key], error_attrs[:exception_class].new(params['error']))
@@ -457,8 +459,8 @@ module OmniAuth
         false
       end
 
-      def configured_response_type
-        @configured_response_type ||= options.response_type.to_s
+      def configured_response_types
+        @configured_response_types ||= Array(options.response_type).map(&:to_s)
       end
 
       def verify_id_token!(id_token)
