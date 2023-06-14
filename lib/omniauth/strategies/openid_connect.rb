@@ -208,7 +208,7 @@ module OmniAuth
       end
 
       def public_key(kid)
-        return JSON::JWK::Set::Fetcher.fetch(jwks_uri, kid: kid) if kid.present?
+        return JSON::JWK::Set::Fetcher.fetch(client_options.jwks_uri, kid: kid) if kid.present?
 
         parse_jwk_key(JSON.load(URI.parse(client_options.jwks_uri).open)) # rubocop:disable Security/JSONLoad
       end
