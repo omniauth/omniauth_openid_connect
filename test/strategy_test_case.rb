@@ -37,6 +37,18 @@ class StrategyTestCase < MiniTest::Test
     @jwt ||= JSON::JWT.new(payload).sign(private_key, :RS256)
   end
 
+  def hmac_secret
+    @hmac_secret ||= SecureRandom.hex(16)
+  end
+
+  def jwt_with_hs256
+    @jwt_with_hs256 ||= JSON::JWT.new(payload).sign(hmac_secret, :HS256)
+  end
+
+  def jwt_with_hs512
+    @jwt_with_hs512 ||= JSON::JWT.new(payload).sign(hmac_secret, :HS512)
+  end
+
   def jwks
     @jwks ||= begin
       key = JSON::JWK.new(private_key)

@@ -23,26 +23,49 @@ Or install it yourself as:
 
 ## Supported Ruby Versions
 
-OmniAuth::OpenIDConnect is tested under 2.5, 2.6, 2.7, 3.0, 3.1
+OmniAuth::OpenIDConnect is tested under 2.7, 3.0, 3.1, 3.2
 
 ## Usage
 
 Example configuration
+
 ```ruby
-config.omniauth :openid_connect, {
-  name: :my_provider,
-  scope: [:openid, :email, :profile, :address],
-  response_type: :code,
-  uid_field: "preferred_username",
-  client_options: {
-    port: 443,
-    scheme: "https",
-    host: "myprovider.com",
-    identifier: ENV["OP_CLIENT_ID"],
-    secret: ENV["OP_SECRET_KEY"],
-    redirect_uri: "http://myapp.com/users/auth/openid_connect/callback",
-  },
-}
+Rails.application.config.middleware.use OmniAuth::Builder do
+  provider :openid_connect, {
+    name: :my_provider,
+    scope: [:openid, :email, :profile, :address],
+    response_type: :code,
+    uid_field: "preferred_username",
+    client_options: {
+      port: 443,
+      scheme: "https",
+      host: "myprovider.com",
+      identifier: ENV["OP_CLIENT_ID"],
+      secret: ENV["OP_SECRET_KEY"],
+      redirect_uri: "http://myapp.com/users/auth/openid_connect/callback",
+    },
+  }
+end
+```
+
+### with Devise
+```ruby
+Devise.setup do |config|
+  config.omniauth :openid_connect, {
+    name: :my_provider,
+    scope: [:openid, :email, :profile, :address],
+    response_type: :code,
+    uid_field: "preferred_username",
+    client_options: {
+      port: 443,
+      scheme: "https",
+      host: "myprovider.com",
+      identifier: ENV["OP_CLIENT_ID"],
+      secret: ENV["OP_SECRET_KEY"],
+      redirect_uri: "http://myapp.com/users/auth/openid_connect/callback",
+    },
+  }
+end
 ```
 
 ### Options Overview
@@ -69,6 +92,8 @@ config.omniauth :openid_connect, {
 | pkce_verifier                | Specify a custom PKCE verifier code.                                                                                                                          | no       | A random 128-char string      | Proc.new { SecureRandom.hex(64) }                   |
 | pkce_options                 | Specify a custom implementation of the PKCE code challenge/method.                                                                                            | no       | SHA256(code_challenge) in hex | Proc to customise the code challenge generation     |
 | client_options               | A hash of client options detailed in its own section                                                                                                          | yes      |                               |                                                     |
+| jwt_secret_base64 | For HMAC with SHA2 (e.g. HS256) signing algorithms, specify the base64-encoded secret used to sign the JWT token. Defaults to the OAuth2 client secret if not specified. | no | client_options.secret | "bXlzZWNyZXQ=\n"
+| logout_path | The log out is only triggered when the request path ends on this path | no | '/logout' | '/sign_out'
 
 ### Client Config Options
 
@@ -120,17 +145,17 @@ These are the configuration options for the client_options hash of the configura
   property can be used to add the attribute to the token request. Initial value is `true`, which means that the
   scope attribute is included by default.
 
-### Additional notes
+## Additional notes
   * In some cases, you may want to go straight to the callback phase - e.g. when requested by a stateless client, like a mobile app.
   In such example, the session is empty, so you have to forward certain parameters received from the client.
-  Currently supported one is `code_verifier` - simply provide it as the `/callback` request parameter.
+  Currently supported ones are `code_verifier` and `nonce` - simply provide them as the `/callback` request parameters.
 
 For the full low down on OpenID Connect, please check out
 [the spec](http://openid.net/specs/openid-connect-core-1_0.html).
 
 ## Contributing
 
-1. Fork it ( http://github.com/m0n9oose/omniauth-openid-connect/fork )
+1. Fork it ( http://github.com/omniauth/omniauth_openid_connect/fork )
 2. Create your feature branch (`git checkout -b my-new-feature`)
 3. Cover your changes with tests and make sure they're green (`bundle install && bundle exec rake test`)
 4. Commit your changes (`git commit -am 'Add some feature'`)

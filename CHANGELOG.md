@@ -1,6 +1,31 @@
 # Unreleased
 
+# v0.7.1 (26.04.2023)
+
+- Fix handling of JWKS response (https://github.com/omniauth/omniauth_openid_connect/pull/157)
+
+# v0.7.0 (25.04.2023)
+
+- Update openid_connect to 2.2 (https://github.com/omniauth/omniauth_openid_connect/pull/153)
+- Drop Ruby 2.5 and 2.6 CI support (https://github.com/omniauth/omniauth_openid_connect/pull/154)
+- Improvements to README (https://github.com/omniauth/omniauth_openid_connect/pull/152, https://github.com/omniauth/omniauth_openid_connect/pull/151)
+- Add option `logout_path` (https://github.com/omniauth/omniauth_openid_connect/pull/143)
+
+# v0.6.1 (22.02.2023)
+
+- Fix uninitialized constant error (https://github.com/omniauth/omniauth_openid_connect/pull/147)
+
+# v0.6.0 (21.01.2023)
+
+- Support verification of HS256-signed JWTs (https://github.com/omniauth/omniauth_openid_connect/pull/134)
+
+# v0.5.0 (26.12.2022)
+
+- Support the "nonce" parameter forwarding without a session [#130](https://github.com/omniauth/omniauth_openid_connect/pull/130)
+- Fetch key from JWKS URI if available [#133](https://github.com/omniauth/omniauth_openid_connect/pull/133)
 - Make the state parameter verification optional [#122](https://github.com/omniauth/omniauth_openid_connect/pull/122)
+- Add email_verified claim in user info [#131](https://github.com/omniauth/omniauth_openid_connect/pull/131)
+- Add PKCE verification support [#128](https://github.com/omniauth/omniauth_openid_connect/pull/128)
 
 # v0.4.0 (06.02.2022)
 
