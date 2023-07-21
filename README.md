@@ -23,26 +23,49 @@ Or install it yourself as:
 
 ## Supported Ruby Versions
 
-OmniAuth::OpenIDConnect is tested under 2.5, 2.6, 2.7, 3.0, 3.1
+OmniAuth::OpenIDConnect is tested under 2.7, 3.0, 3.1, 3.2
 
 ## Usage
 
 Example configuration
+
 ```ruby
-config.omniauth :openid_connect, {
-  name: :my_provider,
-  scope: [:openid, :email, :profile, :address],
-  response_type: :code,
-  uid_field: "preferred_username",
-  client_options: {
-    port: 443,
-    scheme: "https",
-    host: "myprovider.com",
-    identifier: ENV["OP_CLIENT_ID"],
-    secret: ENV["OP_SECRET_KEY"],
-    redirect_uri: "http://myapp.com/users/auth/openid_connect/callback",
-  },
-}
+Rails.application.config.middleware.use OmniAuth::Builder do
+  provider :openid_connect, {
+    name: :my_provider,
+    scope: [:openid, :email, :profile, :address],
+    response_type: :code,
+    uid_field: "preferred_username",
+    client_options: {
+      port: 443,
+      scheme: "https",
+      host: "myprovider.com",
+      identifier: ENV["OP_CLIENT_ID"],
+      secret: ENV["OP_SECRET_KEY"],
+      redirect_uri: "http://myapp.com/users/auth/openid_connect/callback",
+    },
+  }
+end
+```
+
+### with Devise
+```ruby
+Devise.setup do |config|
+  config.omniauth :openid_connect, {
+    name: :my_provider,
+    scope: [:openid, :email, :profile, :address],
+    response_type: :code,
+    uid_field: "preferred_username",
+    client_options: {
+      port: 443,
+      scheme: "https",
+      host: "myprovider.com",
+      identifier: ENV["OP_CLIENT_ID"],
+      secret: ENV["OP_SECRET_KEY"],
+      redirect_uri: "http://myapp.com/users/auth/openid_connect/callback",
+    },
+  }
+end
 ```
 
 ### Options Overview
@@ -132,7 +155,7 @@ For the full low down on OpenID Connect, please check out
 
 ## Contributing
 
-1. Fork it ( http://github.com/m0n9oose/omniauth-openid-connect/fork )
+1. Fork it ( http://github.com/omniauth/omniauth_openid_connect/fork )
 2. Create your feature branch (`git checkout -b my-new-feature`)
 3. Cover your changes with tests and make sure they're green (`bundle install && bundle exec rake test`)
 4. Commit your changes (`git commit -am 'Add some feature'`)

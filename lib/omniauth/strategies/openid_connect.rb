@@ -228,7 +228,7 @@ module OmniAuth
       private
 
       def fetch_key
-        @fetch_key ||= parse_jwk_key(::OpenIDConnect.http_client.get_content(client_options.jwks_uri))
+        @fetch_key ||= parse_jwk_key(::OpenIDConnect.http_client.get(client_options.jwks_uri).body)
       end
 
       def base64_decoded_jwt_secret
@@ -404,7 +404,7 @@ module OmniAuth
       end
 
       def parse_jwk_key(key)
-        json = JSON.parse(key)
+        json = key.is_a?(String) ? JSON.parse(key) : key
         return JSON::JWK::Set.new(json['keys']) if json.key?('keys')
 
         JSON::JWK.new(json)

@@ -5,6 +5,7 @@ require 'minitest/autorun'
 require 'mocha/minitest'
 require 'faker'
 require 'active_support'
+require 'webmock/minitest'
 
 SimpleCov.start do
   if ENV['CI']

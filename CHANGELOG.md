@@ -1,3 +1,16 @@
+# Unreleased
+
+# v0.7.1 (26.04.2023)
+
+- Fix handling of JWKS response (https://github.com/omniauth/omniauth_openid_connect/pull/157)
+
+# v0.7.0 (25.04.2023)
+
+- Update openid_connect to 2.2 (https://github.com/omniauth/omniauth_openid_connect/pull/153)
+- Drop Ruby 2.5 and 2.6 CI support (https://github.com/omniauth/omniauth_openid_connect/pull/154)
+- Improvements to README (https://github.com/omniauth/omniauth_openid_connect/pull/152, https://github.com/omniauth/omniauth_openid_connect/pull/151)
+- Add option `logout_path` (https://github.com/omniauth/omniauth_openid_connect/pull/143)
+
 # v0.6.1 (22.02.2023)
 
 - Fix uninitialized constant error (https://github.com/omniauth/omniauth_openid_connect/pull/147)
