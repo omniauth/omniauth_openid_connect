@@ -58,19 +58,20 @@ class StrategyTestCase < MiniTest::Test
   end
 
   def user_info
-    @user_info ||= OpenIDConnect::ResponseObject::UserInfo.new(
+    @user_info ||= OmniAuth::Tara::UserInfo.new(
       sub: SecureRandom.hex(16),
       name: Faker::Name.name,
       email: Faker::Internet.email,
       email_verified: Faker::Boolean.boolean,
-      nickname: Faker::Name.first_name,
       preferred_username: Faker::Internet.user_name,
-      given_name: Faker::Name.first_name,
-      family_name: Faker::Name.last_name,
-      gender: 'female',
-      picture: "#{Faker::Internet.url}.png",
+      nickname: Faker::Name.first_name,
+      profile_attributes: {
+        given_name: Faker::Name.first_name,
+        family_name: Faker::Name.last_name,
+        date_of_birth: '1903-03-03',
+      },
       phone_number: Faker::PhoneNumber.phone_number,
-      website: Faker::Internet.url
+      phone_number_verified: Faker::Boolean.boolean
     )
   end
 
@@ -86,7 +87,7 @@ class StrategyTestCase < MiniTest::Test
   end
 
   def strategy
-    @strategy ||= OmniAuth::Strategies::OpenIDConnect.new(DummyApp.new).tap do |strategy|
+    @strategy ||= OmniAuth::Strategies::Tara.new(DummyApp.new).tap do |strategy|
       strategy.options.client_options.identifier = @identifier
       strategy.options.client_options.secret = @secret
       strategy.stubs(:request).returns(request)

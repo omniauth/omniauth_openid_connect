@@ -10,28 +10,28 @@ require 'forwardable'
 
 module OmniAuth
   module Strategies
-    class OpenIDConnect # rubocop:disable Metrics/ClassLength
+    class Tara # rubocop:disable Metrics/ClassLength
       include OmniAuth::Strategy
       extend Forwardable
 
       RESPONSE_TYPE_EXCEPTIONS = {
-        'id_token' => { exception_class: OmniAuth::OpenIDConnect::MissingIdTokenError, key: :missing_id_token }.freeze,
-        'code' => { exception_class: OmniAuth::OpenIDConnect::MissingCodeError, key: :missing_code }.freeze,
+        'code' => { exception_class: OmniAuth::Tara::MissingCodeError,
+                    key: :missing_code }.freeze,
       }.freeze
 
       def_delegator :request, :params
 
-      option :name, 'openid_connect'
+      option :name, 'tara'
       option(:client_options, identifier: nil,
                               secret: nil,
                               redirect_uri: nil,
                               scheme: 'https',
                               host: nil,
                               port: 443,
-                              authorization_endpoint: '/authorize',
-                              token_endpoint: '/token',
-                              userinfo_endpoint: '/userinfo',
-                              jwks_uri: '/jwk',
+                              authorization_endpoint: '/oidc/authorize',
+                              token_endpoint: '/oidc/token',
+                              userinfo_endpoint: '/oidc/profile',
+                              jwks_uri: '/oidc/jwks',
                               end_session_endpoint: nil)
 
       option :issuer
@@ -41,7 +41,7 @@ module OmniAuth
       option :client_jwk_signing_key
       option :client_x509_signing_key
       option :scope, [:openid]
-      option :response_type, 'code' # ['code', 'id_token']
+      option :response_type, 'code'
       option :require_state, true
       option :state
       option :response_mode # [:query, :fragment, :form_post, :web_message]
@@ -76,16 +76,18 @@ module OmniAuth
 
       info do
         {
-          name: user_info.name,
+          # name: user_info.name,
           email: user_info.email,
           email_verified: user_info.email_verified,
-          nickname: user_info.preferred_username,
+          # nickname: user_info.preferred_username,
           first_name: user_info.given_name,
           last_name: user_info.family_name,
-          gender: user_info.gender,
-          image: user_info.picture,
-          phone: user_info.phone_number,
-          urls: { website: user_info.website },
+          # gender: user_info.gender,
+          # image: user_info.picture,
+          phone_number: user_info.phone_number,
+          phone_verified: user_info.phone_number_verified,
+          birthdate: user_info.birthdate,
+          # urls: { website: user_info.website },
         }
       end
 
@@ -129,12 +131,8 @@ module OmniAuth
 
         options.issuer = issuer if options.issuer.nil? || options.issuer.empty?
 
-        verify_id_token!(params['id_token']) if configured_response_type == 'id_token'
         discover!
         client.redirect_uri = redirect_uri
-
-        return id_token_callback_phase if configured_response_type == 'id_token'
-
         client.authorization_code = authorization_code
         access_token
         super
@@ -256,13 +254,9 @@ module OmniAuth
       def user_info
         return @user_info if @user_info
 
-        if access_token.id_token
-          decoded = decode_id_token(access_token.id_token).raw_attributes
-
-          @user_info = ::OpenIDConnect::ResponseObject::UserInfo.new access_token.userinfo!.raw_attributes.merge(decoded)
-        else
-          @user_info = access_token.userinfo!
-        end
+        decoded = decode_id_token(access_token.id_token).raw_attributes
+        # @user_info = ::OpenIDConnect::ResponseObject::UserInfo.new access_token.userinfo!.raw_attributes.merge(decoded)
+        @user_info = OmniAuth::Tara::UserInfo.new access_token.userinfo!.raw_attributes.merge(decoded)
       end
 
       def access_token
@@ -276,7 +270,7 @@ module OmniAuth
         token_request_params[:code_verifier] = params['code_verifier'] || session.delete('omniauth.pkce.verifier') if options.pkce
 
         @access_token = client.access_token!(token_request_params)
-        verify_id_token!(@access_token.id_token) if configured_response_type == 'code'
+        verify_id_token!(@access_token.id_token)
 
         @access_token
       end
@@ -487,4 +481,4 @@ module OmniAuth
   end
 end
 
-OmniAuth.config.add_camelization 'openid_connect', 'OpenIDConnect'
+OmniAuth.config.add_camelization 'tara', 'Tara'

@@ -22,6 +22,6 @@ end
 
 lib = File.expand_path('../lib', __dir__)
 $LOAD_PATH.unshift(lib) unless $LOAD_PATH.include?(lib)
-require 'omniauth_openid_connect'
+require 'omniauth_tara'
 require_relative 'strategy_test_case'
 OmniAuth.config.test_mode = true
