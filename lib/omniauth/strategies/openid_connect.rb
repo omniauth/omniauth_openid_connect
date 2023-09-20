@@ -423,9 +423,17 @@ module OmniAuth
       def encoded_post_logout_redirect_uri
         return unless options.post_logout_redirect_uri
 
-        URI.encode_www_form(
-          post_logout_redirect_uri: options.post_logout_redirect_uri
-        )
+        logout_uri_params = {
+          'post_logout_redirect_uri' => options.post_logout_redirect_uri,
+        }
+
+        unless query_string.empty?
+          token_key = 'id_token_hint'
+          query_params = CGI.parse(query_string[1..])
+          logout_uri_params[token_key] = query_params[token_key].first if query_params.key?(token_key)
+        end
+
+        URI.encode_www_form(logout_uri_params)
       end
 
       def end_session_endpoint_is_valid?

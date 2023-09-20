@@ -54,7 +54,7 @@ module OmniAuth
         issuer.stubs(:issuer).returns('https://example.com/')
         ::OpenIDConnect::Discovery::Provider.stubs(:discover!).returns(issuer)
 
-        config = stub('OpenIDConnect::Discovery::Provder::Config')
+        config = stub('OpenIDConnect::Discovery::Provider::Config')
         config.stubs(:authorization_endpoint).returns('https://example.com/authorization')
         config.stubs(:token_endpoint).returns('https://example.com/token')
         config.stubs(:userinfo_endpoint).returns('https://example.com/userinfo')
@@ -64,6 +64,33 @@ module OmniAuth
 
         request.stubs(:path_info).returns('/auth/openid_connect/logout')
         request.stubs(:path).returns('/auth/openid_connect/logout')
+        request.stubs(:query_string).returns('')
+
+        strategy.expects(:redirect).with(expected_redirect)
+        strategy.other_phase
+      end
+
+      def test_logout_phase_with_discovery_and_post_logout_redirect_uri_and_id_token_hint
+        expected_redirect = 'https://example.com/logout?post_logout_redirect_uri=https%3A%2F%2Fmysite.com&id_token_hint=abcd1234'
+        strategy.options.client_options.host = 'example.com'
+        strategy.options.discovery = true
+        strategy.options.post_logout_redirect_uri = 'https://mysite.com'
+
+        issuer = stub('OpenIDConnect::Discovery::Issuer')
+        issuer.stubs(:issuer).returns('https://example.com/')
+        ::OpenIDConnect::Discovery::Provider.stubs(:discover!).returns(issuer)
+
+        config = stub('OpenIDConnect::Discovery::Provider::Config')
+        config.stubs(:authorization_endpoint).returns('https://example.com/authorization')
+        config.stubs(:token_endpoint).returns('https://example.com/token')
+        config.stubs(:userinfo_endpoint).returns('https://example.com/userinfo')
+        config.stubs(:jwks_uri).returns('https://example.com/jwks')
+        config.stubs(:end_session_endpoint).returns('https://example.com/logout')
+        ::OpenIDConnect::Discovery::Provider::Config.stubs(:discover!).with('https://example.com/').returns(config)
+
+        request.stubs(:path_info).returns('/auth/openid_connect/logout')
+        request.stubs(:path).returns('/auth/openid_connect/logout')
+        request.stubs(:query_string).returns('id_token_hint=abcd1234')
 
         strategy.expects(:redirect).with(expected_redirect)
         strategy.other_phase
