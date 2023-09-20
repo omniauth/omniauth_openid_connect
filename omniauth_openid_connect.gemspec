@@ -34,7 +34,7 @@ Gem::Specification.new do |spec|
   spec.add_development_dependency 'guard-bundler', '~> 2.2'
   spec.add_development_dependency 'guard-minitest', '~> 2.4'
   spec.add_development_dependency 'minitest', '~> 5.1'
-  spec.add_development_dependency 'mocha', '~> 1.7'
+  spec.add_development_dependency 'mocha', '~> 2.1.0'
   spec.add_development_dependency 'rake', '~> 12.0'
   spec.add_development_dependency 'rubocop', '~> 1.12'
   spec.add_development_dependency 'simplecov', '~> 0.21'
