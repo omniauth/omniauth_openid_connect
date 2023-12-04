@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-class StrategyTestCase < MiniTest::Test
+class StrategyTestCase < Minitest::Test
   class DummyApp
     def call(env); end
   end
