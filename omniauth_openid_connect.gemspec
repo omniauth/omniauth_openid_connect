@@ -11,7 +11,7 @@ Gem::Specification.new do |spec|
   spec.email         = ['jjbohn@gmail.com', 'm0n9oose@gmail.com']
   spec.summary       = 'OpenID Connect Strategy for OmniAuth'
   spec.description   = 'OpenID Connect Strategy for OmniAuth.'
-  spec.homepage      = 'https://github.com/m0n9oose/omniauth_openid_connect'
+  spec.homepage      = 'https://github.com/omniauth/omniauth_openid_connect'
   spec.license       = 'MIT'
 
   spec.files         = `git ls-files -z`.split("\x0")
@@ -20,10 +20,10 @@ Gem::Specification.new do |spec|
   spec.require_paths = ['lib']
 
   spec.metadata = {
-    'bug_tracker_uri' => 'https://github.com/m0n9oose/omniauth_openid_connect/issues',
-    'changelog_uri' => 'https://github.com/m0n9oose/omniauth_openid_connect/releases',
-    'documentation_uri' => "https://github.com/m0n9oose/omniauth_openid_connect/tree/v#{spec.version}#readme",
-    'source_code_uri' => "https://github.com/m0n9oose/omniauth_openid_connect/tree/v#{spec.version}",
+    'bug_tracker_uri' => 'https://github.com/omniauth/omniauth_openid_connect/issues',
+    'changelog_uri' => 'https://github.com/omniauth/omniauth_openid_connect/releases',
+    'documentation_uri' => "https://github.com/omniauth/omniauth_openid_connect/tree/v#{spec.version}#readme",
+    'source_code_uri' => "https://github.com/omniauth/omniauth_openid_connect/tree/v#{spec.version}",
     'rubygems_mfa_required' => 'true',
   }
 
