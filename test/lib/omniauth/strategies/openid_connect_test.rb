@@ -45,10 +45,13 @@ module OmniAuth
       end
 
       def test_logout_phase_with_discovery_and_post_logout_redirect_uri
-        expected_redirect = 'https://example.com/logout?post_logout_redirect_uri=https%3A%2F%2Fmysite.com'
+        access_token = stub('OpenIDConnect::AccessToken')
+        access_token.stubs(:id_token).returns(jwt.to_s)
+        expected_redirect = "https://example.com/logout?post_logout_redirect_uri=https%3A%2F%2Fmysite.com&id_token_hint=#{access_token.id_token}"
         strategy.options.client_options.host = 'example.com'
         strategy.options.discovery = true
         strategy.options.post_logout_redirect_uri = 'https://mysite.com'
+        strategy.stubs(:access_token).returns(access_token)
 
         issuer = stub('OpenIDConnect::Discovery::Issuer')
         issuer.stubs(:issuer).returns('https://example.com/')
