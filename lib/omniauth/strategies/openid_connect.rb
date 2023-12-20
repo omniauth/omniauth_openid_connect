@@ -67,6 +67,7 @@ module OmniAuth
         },
         code_challenge_method: 'S256',
       }
+      option :expires_latency # seconds taken from credentials expires_at
 
       option :logout_path, '/logout'
 
@@ -99,6 +100,7 @@ module OmniAuth
           token: access_token.access_token,
           refresh_token: access_token.refresh_token,
           expires_in: access_token.expires_in,
+          expires_at: @access_token_expires_at,
           scope: access_token.scope,
         }
       end
@@ -277,6 +279,11 @@ module OmniAuth
 
         @access_token = client.access_token!(token_request_params)
         verify_id_token!(@access_token.id_token) if configured_response_type == 'code'
+
+        if @access_token.expires_in
+          @access_token_expires_at = Time.now.to_i + @access_token.expires_in
+          @access_token_expires_at -= options.expires_latency if options.expires_latency
+        end
 
         @access_token
       end
