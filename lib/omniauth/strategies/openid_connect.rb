@@ -67,6 +67,7 @@ module OmniAuth
         },
         code_challenge_method: 'S256',
       }
+      option :call_userinfo_endpoint, true
 
       option :logout_path, '/logout'
 
@@ -258,10 +259,14 @@ module OmniAuth
 
         if access_token.id_token
           decoded = decode_id_token(access_token.id_token).raw_attributes
+          merge_with = JSON::JWS.new({})
+          merge_with = access_token.userinfo!.raw_attributes if options.call_userinfo_endpoint
 
-          @user_info = ::OpenIDConnect::ResponseObject::UserInfo.new access_token.userinfo!.raw_attributes.merge(decoded)
-        else
+          @user_info = ::OpenIDConnect::ResponseObject::UserInfo.new merge_with.merge(decoded)
+        elsif options.call_userinfo_endpoint
           @user_info = access_token.userinfo!
+        else
+          @user_info = ::OpenIDConnect::ResponseObject::UserInfo.new
         end
       end
 
