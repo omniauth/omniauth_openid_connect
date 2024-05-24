@@ -28,6 +28,7 @@ module OmniAuth
                               scheme: 'https',
                               host: nil,
                               port: 443,
+                              audience: nil,
                               authorization_endpoint: '/authorize',
                               token_endpoint: '/token',
                               userinfo_endpoint: '/userinfo',
@@ -466,6 +467,7 @@ module OmniAuth
 
         decode_id_token(id_token).verify!(issuer: options.issuer,
                                           client_id: client_options.identifier,
+                                          audience: client_options.audience,
                                           nonce: params['nonce'].presence || stored_nonce)
       end
 
