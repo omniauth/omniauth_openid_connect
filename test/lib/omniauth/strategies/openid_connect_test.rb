@@ -496,7 +496,7 @@ module OmniAuth
         strategy.callback_phase
       end
 
-      def test_callback_phase_with_invalid_state_without_state_verification
+      def test_callback_phase_with_invalid_state_without_state_verification # rubocop:disable Metrics/AbcSize
         code = SecureRandom.hex(16)
         state = SecureRandom.hex(16)
 
@@ -505,8 +505,38 @@ module OmniAuth
         request.stubs(:params).returns('code' => code, 'state' => 'foobar')
         request.stubs(:path).returns('')
 
+        strategy.options.client_options.host = 'example.com'
+        strategy.options.discovery = true
+
+        issuer = stub('OpenIDConnect::Discovery::Issuer')
+        issuer.stubs(:issuer).returns('https://example.com/')
+        ::OpenIDConnect::Discovery::Provider.stubs(:discover!).returns(issuer)
+
+        config = stub('OpenIDConnect::Discovery::Provder::Config')
+        config.stubs(:authorization_endpoint).returns('https://example.com/authorization')
+        config.stubs(:token_endpoint).returns('https://example.com/token')
+        config.stubs(:userinfo_endpoint).returns('https://example.com/userinfo')
+        config.stubs(:jwks_uri).returns('https://example.com/jwks')
+        config.stubs(:jwks).returns(JSON::JWK::Set.new(jwks['keys']))
+
+        ::OpenIDConnect::Discovery::Provider::Config.stubs(:discover!).with('https://example.com/').returns(config)
+
+        id_token = stub('OpenIDConnect::ResponseObject::IdToken')
+        id_token.stubs(:raw_attributes).returns('sub' => 'sub', 'name' => 'name', 'email' => 'email')
+        id_token.stubs(:verify!).with(issuer: 'https://example.com/', client_id: @identifier, nonce: nonce).returns(true)
+        ::OpenIDConnect::ResponseObject::IdToken.stubs(:decode).returns(id_token)
+
+        strategy.unstub(:user_info)
+        access_token = stub('OpenIDConnect::AccessToken')
+        access_token.stubs(:access_token)
+        access_token.stubs(:refresh_token)
+        access_token.stubs(:expires_in)
+        access_token.stubs(:scope)
+        access_token.stubs(:id_token).returns(jwt.to_s)
+        client.expects(:access_token!).at_least_once.returns(access_token)
+        access_token.expects(:userinfo!).returns(user_info)
+
         strategy.call!('rack.session' => { 'omniauth.state' => state, 'omniauth.nonce' => nonce })
-        strategy.expects(:fail!)
         strategy.callback_phase
       end
 
