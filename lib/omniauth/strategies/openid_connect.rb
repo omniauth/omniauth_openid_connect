@@ -175,7 +175,6 @@ module OmniAuth
           response_type: options.response_type,
           response_mode: options.response_mode,
           scope: options.scope,
-          state: new_state,
           login_hint: params['login_hint'],
           ui_locales: params['ui_locales'],
           claims_locales: params['claims_locales'],
@@ -185,6 +184,7 @@ module OmniAuth
           acr_values: options.acr_values,
         }
 
+        opts[:state] = new_state if options.require_state
         opts.merge!(options.extra_authorize_params) unless options.extra_authorize_params.empty?
 
         options.allow_authorize_params.each do |key|

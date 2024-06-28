@@ -492,6 +492,8 @@ module OmniAuth
         client.expects(:access_token!).at_least_once.returns(access_token)
         access_token.expects(:userinfo!).returns(user_info)
 
+        refute_match(/state=/, strategy.authorize_uri, 'URI must not contain state')
+
         strategy.call!('rack.session' => { 'omniauth.nonce' => nonce })
         strategy.callback_phase
       end
@@ -535,6 +537,8 @@ module OmniAuth
         access_token.stubs(:id_token).returns(jwt.to_s)
         client.expects(:access_token!).at_least_once.returns(access_token)
         access_token.expects(:userinfo!).returns(user_info)
+
+        refute_match(/state=/, strategy.authorize_uri, 'URI must not contain state')
 
         strategy.call!('rack.session' => { 'omniauth.state' => state, 'omniauth.nonce' => nonce })
         strategy.callback_phase
