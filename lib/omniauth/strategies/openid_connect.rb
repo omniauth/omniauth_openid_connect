@@ -42,6 +42,7 @@ module OmniAuth
       option :client_x509_signing_key
       option :scope, [:openid]
       option :response_type, 'code' # ['code', 'id_token']
+      option :send_state, true
       option :require_state, true
       option :state
       option :response_mode # [:query, :fragment, :form_post, :web_message]
@@ -120,7 +121,12 @@ module OmniAuth
       def callback_phase
         error = params['error_reason'] || params['error']
         error_description = params['error_description'] || params['error_reason']
-        invalid_state = (options.require_state && params['state'].to_s.empty?) || params['state'] != stored_state
+        invalid_state =
+          if options.send_state
+            (options.require_state && params['state'].to_s.empty?) || params['state'] != stored_state
+          else
+            false
+          end
 
         raise CallbackError, error: params['error'], reason: error_description, uri: params['error_uri'] if error
         raise CallbackError, error: :csrf_detected, reason: "Invalid 'state' parameter" if invalid_state
@@ -169,13 +175,12 @@ module OmniAuth
         end_session_uri.to_s
       end
 
-      def authorize_uri
+      def authorize_uri # rubocop:disable Metrics/AbcSize
         client.redirect_uri = redirect_uri
         opts = {
           response_type: options.response_type,
           response_mode: options.response_mode,
           scope: options.scope,
-          state: new_state,
           login_hint: params['login_hint'],
           ui_locales: params['ui_locales'],
           claims_locales: params['claims_locales'],
@@ -185,6 +190,7 @@ module OmniAuth
           acr_values: options.acr_values,
         }
 
+        opts[:state] = new_state if options.send_state
         opts.merge!(options.extra_authorize_params) unless options.extra_authorize_params.empty?
 
         options.allow_authorize_params.each do |key|
