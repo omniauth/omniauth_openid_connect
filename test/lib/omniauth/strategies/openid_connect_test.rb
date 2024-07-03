@@ -252,10 +252,11 @@ module OmniAuth
         state = SecureRandom.hex(16)
         strategy.options.response_type = 'id_token'
         strategy.options.issuer = 'example.com'
-        strategy.options.client_options.audience = "my_audience"
+        strategy.options.client_options.audience = 'my_audience'
 
         id_token = stub('OpenIDConnect::ResponseObject::IdToken')
-        id_token.expects(:verify!).with(issuer: strategy.options.issuer, client_id: @identifier, audience: "my_audience", nonce: nonce).returns(true)
+        id_token.expects(:verify!).with(issuer: strategy.options.issuer, client_id: @identifier, audience: 'my_audience',
+                                        nonce: nonce).returns(true)
         id_token.stubs(:raw_attributes, :to_h).returns(payload)
 
         request.stubs(:params).returns('state' => state, 'nounce' => nonce, 'id_token' => id_token)
