@@ -108,7 +108,7 @@ These are the configuration options for the client_options hash of the configura
 | scheme                 | The http scheme to use                                          | https      |                        |
 | host                   | The host of the authorization server                            | nil        |                        |
 | port                   | The port for the authorization server                           | 443        |                        |
-| audience               | The intended consumer of the token                              | nil        |                        |
+| audience               | The intended consumer (`aud` field) of the id_token              | nil        |                        |
 | authorization_endpoint | The authorize endpoint on the authorization server              | /authorize | yes                    |
 | token_endpoint         | The token endpoint on the authorization server                  | /token     | yes                    |
 | userinfo_endpoint      | The user info endpoint on the authorization server              | /userinfo  | yes                    |
