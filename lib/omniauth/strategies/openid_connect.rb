@@ -28,6 +28,7 @@ module OmniAuth
                               scheme: 'https',
                               host: nil,
                               port: 443,
+                              audience: nil,
                               authorization_endpoint: '/authorize',
                               token_endpoint: '/token',
                               userinfo_endpoint: '/userinfo',
@@ -470,9 +471,14 @@ module OmniAuth
       def verify_id_token!(id_token)
         return unless id_token
 
-        decode_id_token(id_token).verify!(issuer: options.issuer,
-                                          client_id: client_options.identifier,
-                                          nonce: params['nonce'].presence || stored_nonce)
+        verify_kwargs = {
+          issuer: options.issuer,
+          client_id: client_options.identifier,
+          nonce: params['nonce'].presence || stored_nonce,
+        }
+        verify_kwargs.merge!(audience: client_options.audience) if client_options.audience
+
+        decode_id_token(id_token).verify!(**verify_kwargs)
       end
 
       class CallbackError < StandardError
