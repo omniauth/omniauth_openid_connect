@@ -338,9 +338,11 @@ module OmniAuth
         strategy.unstub(:user_info)
         strategy.call!('rack.session' => { 'omniauth.state' => state, 'omniauth.nonce' => nonce })
 
-        assert_raises JSON::JWK::Set::KidNotFound do
+        error = assert_raises JSON::JWK::Set::KidNotFound do
           strategy.callback_phase
         end
+
+        assert_match %r{kid '.*' not found}, error.message
       end
 
       def test_callback_phase_with_id_token_with_hs256
