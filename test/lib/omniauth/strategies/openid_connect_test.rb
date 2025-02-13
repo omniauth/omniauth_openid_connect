@@ -852,10 +852,12 @@ module OmniAuth
 
       def test_option_client_auth_method
         state = SecureRandom.hex(16)
+        code = SecureRandom.hex(16)
 
         opts = strategy.options.client_options
         opts[:host] = 'foobar.com'
         strategy.options.issuer = 'foobar.com'
+        strategy.options.client_options.redirect_uri = 'https://mysite.com/callback'
         strategy.options.client_auth_method = :not_basic
         strategy.options.client_signing_alg = :RS256
         strategy.options.client_jwk_signing_key = jwks.to_json
@@ -867,6 +869,7 @@ module OmniAuth
         }
 
         request.stubs(:path).returns('')
+        request.stubs(:params).returns('code' => code, 'state' => state)
         strategy.call!('rack.session' => { 'omniauth.state' => state, 'omniauth.nonce' => nonce })
 
         id_token = stub('OpenIDConnect::ResponseObject::IdToken')
@@ -874,7 +877,14 @@ module OmniAuth
         ::OpenIDConnect::ResponseObject::IdToken.stubs(:decode).returns(id_token)
 
         url = "#{ opts.scheme }://#{ opts.host }:#{ opts.port }#{ opts.token_endpoint }"
-        body = { scope: 'openid', grant_type: 'client_credentials', client_id: @identifier, client_secret: @secret }
+        body = {
+          scope: 'openid',
+          grant_type: 'authorization_code',
+          client_id: @identifier,
+          client_secret: @secret,
+          redirect_uri: 'https://mysite.com/callback',
+          code: code,
+        }
 
         stub_request(:post, url).with(body: body).to_return(
           body: json_response.to_json,
