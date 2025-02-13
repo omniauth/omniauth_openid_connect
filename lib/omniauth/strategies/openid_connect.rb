@@ -286,6 +286,7 @@ module OmniAuth
           token_request_params[:grant_type] = :authorization_code
           token_request_params[:code] = authorization_code
           token_request_params[:redirect_uri] = redirect_uri
+          token_request_params[:client_id] = client_options.identifier
         end
 
         @access_token = client.access_token!(token_request_params)
