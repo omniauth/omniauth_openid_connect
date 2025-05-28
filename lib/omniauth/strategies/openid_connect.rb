@@ -310,7 +310,7 @@ module OmniAuth
             public_key
           end
 
-        decoded.verify!(keyset)
+        decoded.verify_payload!(keyset)
         ::OpenIDConnect::ResponseObject::IdToken.new(decoded)
       rescue JSON::JWK::Set::KidNotFound
         # If the JWT has a key ID (kid), then we know that the set of
@@ -478,7 +478,7 @@ module OmniAuth
         }
         verify_kwargs.merge!(audience: client_options.audience) if client_options.audience
 
-        decode_id_token(id_token).verify!(**verify_kwargs)
+        decode_id_token(id_token).verify_payload!(**verify_kwargs)
       end
 
       class CallbackError < StandardError
