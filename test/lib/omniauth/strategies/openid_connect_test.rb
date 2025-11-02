@@ -29,7 +29,7 @@ module OmniAuth
         issuer.stubs(:issuer).returns('https://example.com/')
         ::OpenIDConnect::Discovery::Provider.stubs(:discover!).returns(issuer)
 
-        config = stub('OpenIDConnect::Discovery::Provder::Config')
+        config = stub('OpenIDConnect::Discovery::Provider::Config')
         config.stubs(:authorization_endpoint).returns('https://example.com/authorization')
         config.stubs(:token_endpoint).returns('https://example.com/token')
         config.stubs(:userinfo_endpoint).returns('https://example.com/userinfo')
@@ -54,7 +54,86 @@ module OmniAuth
         issuer.stubs(:issuer).returns('https://example.com/')
         ::OpenIDConnect::Discovery::Provider.stubs(:discover!).returns(issuer)
 
-        config = stub('OpenIDConnect::Discovery::Provder::Config')
+        config = stub('OpenIDConnect::Discovery::Provider::Config')
+        config.stubs(:authorization_endpoint).returns('https://example.com/authorization')
+        config.stubs(:token_endpoint).returns('https://example.com/token')
+        config.stubs(:userinfo_endpoint).returns('https://example.com/userinfo')
+        config.stubs(:jwks_uri).returns('https://example.com/jwks')
+        config.stubs(:end_session_endpoint).returns('https://example.com/logout')
+        ::OpenIDConnect::Discovery::Provider::Config.stubs(:discover!).with('https://example.com/').returns(config)
+
+        request.stubs(:path_info).returns('/auth/openid_connect/logout')
+        request.stubs(:path).returns('/auth/openid_connect/logout')
+
+        strategy.expects(:redirect).with(expected_redirect)
+        strategy.other_phase
+      end
+
+      def test_logout_phase_with_discovery_and_id_token_hint
+        id_token = jwt.to_s
+        expected_redirect = "https://example.com/logout?id_token_hint=#{id_token}"
+        strategy.options.client_options.host = 'example.com'
+        strategy.options.discovery = true
+
+        issuer = stub('OpenIDConnect::Discovery::Issuer')
+        issuer.stubs(:issuer).returns('https://example.com/')
+        ::OpenIDConnect::Discovery::Provider.stubs(:discover!).returns(issuer)
+
+        config = stub('OpenIDConnect::Discovery::Provider::Config')
+        config.stubs(:authorization_endpoint).returns('https://example.com/authorization')
+        config.stubs(:token_endpoint).returns('https://example.com/token')
+        config.stubs(:userinfo_endpoint).returns('https://example.com/userinfo')
+        config.stubs(:jwks_uri).returns('https://example.com/jwks')
+        config.stubs(:end_session_endpoint).returns('https://example.com/logout')
+        ::OpenIDConnect::Discovery::Provider::Config.stubs(:discover!).with('https://example.com/').returns(config)
+
+        request.stubs(:path_info).returns('/auth/openid_connect/logout')
+        request.stubs(:path).returns('/auth/openid_connect/logout')
+        request.stubs(:params).returns({ 'id_token_hint' => id_token })
+
+        strategy.expects(:redirect).with(expected_redirect)
+        strategy.other_phase
+      end
+
+      def test_logout_phase_with_discovery_and_client_id
+        expected_redirect = "https://example.com/logout?client_id=#{@identifier}"
+        strategy.options.client_options.host = 'example.com'
+        strategy.options.client_options.identifier = @identifier
+        strategy.options.discovery = true
+        strategy.options.allow_logout_params = [:client_id]
+
+        issuer = stub('OpenIDConnect::Discovery::Issuer')
+        issuer.stubs(:issuer).returns('https://example.com/')
+        ::OpenIDConnect::Discovery::Provider.stubs(:discover!).returns(issuer)
+
+        config = stub('OpenIDConnect::Discovery::Provider::Config')
+        config.stubs(:authorization_endpoint).returns('https://example.com/authorization')
+        config.stubs(:token_endpoint).returns('https://example.com/token')
+        config.stubs(:userinfo_endpoint).returns('https://example.com/userinfo')
+        config.stubs(:jwks_uri).returns('https://example.com/jwks')
+        config.stubs(:end_session_endpoint).returns('https://example.com/logout')
+        ::OpenIDConnect::Discovery::Provider::Config.stubs(:discover!).with('https://example.com/').returns(config)
+
+        request.stubs(:path_info).returns('/auth/openid_connect/logout')
+        request.stubs(:path).returns('/auth/openid_connect/logout')
+
+        strategy.expects(:redirect).with(expected_redirect)
+        strategy.other_phase
+      end
+
+      def test_logout_phase_with_discovery_and_state
+        state = 'cd73ea627b9edbe4f147425398f3151a'
+        expected_redirect = "https://example.com/logout?state=#{state}"
+        strategy.options.client_options.host = 'example.com'
+        strategy.options.state = -> { state }
+        strategy.options.discovery = true
+        strategy.options.allow_logout_params = [:state]
+
+        issuer = stub('OpenIDConnect::Discovery::Issuer')
+        issuer.stubs(:issuer).returns('https://example.com/')
+        ::OpenIDConnect::Discovery::Provider.stubs(:discover!).returns(issuer)
+
+        config = stub('OpenIDConnect::Discovery::Provider::Config')
         config.stubs(:authorization_endpoint).returns('https://example.com/authorization')
         config.stubs(:token_endpoint).returns('https://example.com/token')
         config.stubs(:userinfo_endpoint).returns('https://example.com/userinfo')
@@ -109,7 +188,7 @@ module OmniAuth
         issuer.stubs(:issuer).returns('https://example.com/')
         ::OpenIDConnect::Discovery::Provider.stubs(:discover!).returns(issuer)
 
-        config = stub('OpenIDConnect::Discovery::Provder::Config')
+        config = stub('OpenIDConnect::Discovery::Provider::Config')
         config.stubs(:authorization_endpoint).returns('https://example.com/authorization')
         config.stubs(:token_endpoint).returns('https://example.com/token')
         config.stubs(:userinfo_endpoint).returns('https://example.com/userinfo')
@@ -446,7 +525,7 @@ module OmniAuth
         issuer.stubs(:issuer).returns('https://example.com/')
         ::OpenIDConnect::Discovery::Provider.stubs(:discover!).returns(issuer)
 
-        config = stub('OpenIDConnect::Discovery::Provder::Config')
+        config = stub('OpenIDConnect::Discovery::Provider::Config')
         config.stubs(:authorization_endpoint).returns('https://example.com/authorization')
         config.stubs(:token_endpoint).returns('https://example.com/token')
         config.stubs(:userinfo_endpoint).returns('https://example.com/userinfo')
@@ -490,7 +569,7 @@ module OmniAuth
         issuer.stubs(:issuer).returns('https://example.com/')
         ::OpenIDConnect::Discovery::Provider.stubs(:discover!).returns(issuer)
 
-        config = stub('OpenIDConnect::Discovery::Provder::Config')
+        config = stub('OpenIDConnect::Discovery::Provider::Config')
         config.stubs(:authorization_endpoint).returns('https://example.com/authorization')
         config.stubs(:token_endpoint).returns('https://example.com/token')
         config.stubs(:userinfo_endpoint).returns('https://example.com/userinfo')
@@ -533,7 +612,7 @@ module OmniAuth
         issuer.stubs(:issuer).returns('https://example.com/')
         ::OpenIDConnect::Discovery::Provider.stubs(:discover!).returns(issuer)
 
-        config = stub('OpenIDConnect::Discovery::Provder::Config')
+        config = stub('OpenIDConnect::Discovery::Provider::Config')
         config.stubs(:authorization_endpoint).returns('https://example.com/authorization')
         config.stubs(:token_endpoint).returns('https://example.com/token')
         config.stubs(:userinfo_endpoint).returns('https://example.com/userinfo')
