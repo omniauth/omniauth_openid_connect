@@ -512,50 +512,50 @@ module OmniAuth
 
         protected_b64, encrypted_cek_b64, iv_b64, ciphertext_b64, auth_tag_b64 = jwe_token.split('.')
 
-        header     = JSON.parse(Base64.urlsafe_decode64(protected_b64))
-        enc        = header['enc']
-        cek        = rsa_key.decrypt(
+        header = JSON.parse(Base64.urlsafe_decode64(protected_b64))
+        enc = header['enc']
+        cek = rsa_key.decrypt(
           Base64.urlsafe_decode64(encrypted_cek_b64),
           rsa_padding_mode: 'oaep',
           rsa_oaep_md: 'SHA256',
           rsa_mgf1_md: 'SHA256'
         )
-        init_vec   = Base64.urlsafe_decode64(iv_b64)
+        init_vec = Base64.urlsafe_decode64(iv_b64)
         ciphertext = Base64.urlsafe_decode64(ciphertext_b64)
-        auth_tag   = Base64.urlsafe_decode64(auth_tag_b64)
+        auth_tag = Base64.urlsafe_decode64(auth_tag_b64)
 
         case enc
         when 'A128CBC-HS256' then decrypt_aes_cbc(cek, init_vec, ciphertext, auth_tag, protected_b64, 'aes-128-cbc', 16)
         when 'A256CBC-HS512' then decrypt_aes_cbc(cek, init_vec, ciphertext, auth_tag, protected_b64, 'aes-256-cbc', 32)
-        when 'A128GCM'       then decrypt_aes_gcm(cek, init_vec, ciphertext, auth_tag, protected_b64, 'aes-128-gcm')
-        when 'A256GCM'       then decrypt_aes_gcm(cek, init_vec, ciphertext, auth_tag, protected_b64, 'aes-256-gcm')
+        when 'A128GCM' then decrypt_aes_gcm(cek, init_vec, ciphertext, auth_tag, protected_b64, 'aes-128-gcm')
+        when 'A256GCM' then decrypt_aes_gcm(cek, init_vec, ciphertext, auth_tag, protected_b64, 'aes-256-gcm')
         else raise JSON::JWE::UnexpectedAlgorithm, "Unsupported enc: #{enc}"
         end
       end
 
       # rubocop:disable Metrics/ParameterLists
       def decrypt_aes_cbc(cek, init_vec, ciphertext, auth_tag, auth_data, cipher_name, key_half)
-        mac_key      = cek[0, key_half]
-        enc_key      = cek[key_half, key_half]
-        al           = [auth_data.bytesize * 8].pack('Q>')
-        hmac_input   = auth_data.b + init_vec + ciphertext + al
-        digest       = key_half == 16 ? OpenSSL::Digest.new('SHA256') : OpenSSL::Digest.new('SHA512')
+        mac_key = cek[0, key_half]
+        enc_key = cek[key_half, key_half]
+        al = [auth_data.bytesize * 8].pack('Q>')
+        hmac_input = auth_data.b + init_vec + ciphertext + al
+        digest = key_half == 16 ? OpenSSL::Digest.new('SHA256') : OpenSSL::Digest.new('SHA512')
         expected_tag = OpenSSL::HMAC.digest(digest, mac_key, hmac_input)[0, key_half]
         raise JSON::JWE::DecryptionFailed unless OpenSSL.fixed_length_secure_compare(expected_tag, auth_tag[0, key_half])
 
         cipher = OpenSSL::Cipher.new(cipher_name)
         cipher.decrypt
         cipher.key = enc_key
-        cipher.iv  = init_vec
+        cipher.iv = init_vec
         cipher.update(ciphertext) + cipher.final
       end
 
       def decrypt_aes_gcm(cek, init_vec, ciphertext, auth_tag, auth_data, cipher_name)
         cipher = OpenSSL::Cipher.new(cipher_name)
         cipher.decrypt
-        cipher.key       = cek
-        cipher.iv        = init_vec
-        cipher.auth_tag  = auth_tag
+        cipher.key = cek
+        cipher.iv = init_vec
+        cipher.auth_tag = auth_tag
         cipher.auth_data = auth_data.b
         cipher.update(ciphertext) + cipher.final
       end

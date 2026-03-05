@@ -96,6 +96,8 @@ end
 | jwt_secret_base64            | For HMAC with SHA2 (e.g. HS256) signing algorithms, specify the base64-encoded secret used to sign the JWT token. Defaults to the OAuth2 client secret if not specified. | no       | client_options.secret         | "bXlzZWNyZXQ=\n"                                    |
 | logout_path                  | The log out is only triggered when the request path ends on this path                                                                                                    | no       | '/logout'                     | '/sign_out'                                         |
 | acr_values                   | Authentication Class Reference (ACR) values to be passed to the authorize_uri to enforce a specific level, see [RFC9470](https://www.rfc-editor.org/rfc/rfc9470.html)    | no       | nil                           | "c1 c2"                                             |
+| id_token_encryption_alg      | Key-wrapping algorithm used by the provider to encrypt the ID token as a JWE. When set, the token is decrypted before verification. See [JWE support](#jwe-support) below. | no       | nil                           | "RSA-OAEP", "RSA-OAEP-256", "dir"                  |
+| id_token_encryption_key      | Decryption key matching `id_token_encryption_alg`. PEM-encoded private key for RSA algorithms; raw string/bytes for `dir`. | no       | nil                           |                                                     |
 
 ### Client Config Options
 
@@ -147,6 +149,28 @@ These are the configuration options for the client_options hash of the configura
   this is not in the protocol specifications. In those cases, the `send_scope_to_token_endpoint`
   property can be used to add the attribute to the token request. Initial value is `true`, which means that the
   scope attribute is included by default.
+
+### JWE Support
+
+Some OpenID Connect providers (e.g. the Belgian [It's Me](https://www.itsme-id.com/) identity provider) encrypt the ID token as a [JWE](https://www.rfc-editor.org/rfc/rfc7516) before returning it. Set `id_token_encryption_alg` and `id_token_encryption_key` to have the token transparently decrypted before verification:
+
+```ruby
+provider :openid_connect, {
+  # ... standard options ...
+  id_token_encryption_alg: "RSA-OAEP-256",
+  id_token_encryption_key: File.read("private_key.pem"),
+}
+```
+
+Supported key-wrapping algorithms and their required key type:
+
+| `id_token_encryption_alg` | `id_token_encryption_key`                  | Notes                          |
+|---------------------------|--------------------------------------------|--------------------------------|
+| `RSA-OAEP`                | PEM-encoded RSA private key                |                                |
+| `RSA-OAEP-256`            | PEM-encoded RSA private key                | Requires OpenSSL >= 3.0        |
+| `dir`                     | Raw symmetric key (string/bytes)           |                                |
+
+All four JWE content encryption algorithms are supported: `A128GCM`, `A256GCM`, `A128CBC-HS256`, `A256CBC-HS512`.
 
 ## Additional notes
   * In some cases, you may want to go straight to the callback phase - e.g. when requested by a stateless client, like a mobile app.
