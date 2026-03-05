@@ -14,6 +14,8 @@ module OmniAuth
       include OmniAuth::Strategy
       extend Forwardable
 
+      JWE_SEGMENT_COUNT = 5
+
       RESPONSE_TYPE_EXCEPTIONS = {
         'id_token' => { exception_class: OmniAuth::OpenIDConnect::MissingIdTokenError, key: :missing_id_token }.freeze,
         'code' => { exception_class: OmniAuth::OpenIDConnect::MissingCodeError, key: :missing_code }.freeze,
@@ -71,6 +73,8 @@ module OmniAuth
       }
 
       option :logout_path, '/logout'
+      option :id_token_encryption_alg, nil # e.g. 'RSA-OAEP', 'RSA-OAEP-256', 'dir'
+      option :id_token_encryption_key, nil # PEM string for RSA algorithms; raw bytes/string for 'dir'
 
       def uid
         user_info.raw_attributes[options.uid_field.to_sym] || user_info.sub
@@ -297,6 +301,7 @@ module OmniAuth
       # limitation in the openid_connect gem:
       # https://github.com/nov/openid_connect/issues/61
       def decode_id_token(id_token)
+        id_token = decrypt_jwe(id_token) if jwe?(id_token)
         decoded = JSON::JWT.decode(id_token, :skip_verification)
         algorithm = decoded.algorithm.to_sym
 
@@ -466,6 +471,99 @@ module OmniAuth
 
       def configured_response_type
         @configured_response_type ||= options.response_type.to_s
+      end
+
+      def jwe?(token)
+        options.id_token_encryption_alg.to_s != '' && token.to_s.count('.') + 1 == JWE_SEGMENT_COUNT
+      end
+
+      def decrypt_jwe(jwe_token)
+        alg = options.id_token_encryption_alg.to_s
+        key = options.id_token_encryption_key
+
+        case alg
+        when 'RSA-OAEP'
+          raise_missing_key(:id_token_encryption_key) if key.nil? || key.to_s.strip.empty?
+          JSON::JWE.decode_compact_serialized(jwe_token, OpenSSL::PKey.read(key)).plain_text
+        when 'RSA-OAEP-256'
+          raise_missing_key(:id_token_encryption_key) if key.nil? || key.to_s.strip.empty?
+          decrypt_rsa_oaep_256(jwe_token, OpenSSL::PKey.read(key))
+        when 'dir'
+          raise_missing_key(:id_token_encryption_key) if key.nil? || key.to_s.empty?
+          JSON::JWE.decode_compact_serialized(jwe_token, key).plain_text
+        else
+          raise CallbackError, error: :jwe_decryption_failed,
+                               reason: "Unknown id_token_encryption_alg: #{alg.inspect}"
+        end
+      rescue JSON::JWE::DecryptionFailed, JSON::JWE::InvalidFormat, JSON::JWE::UnexpectedAlgorithm,
+             OpenSSL::PKey::PKeyError, OpenSSL::Cipher::CipherError,
+             JSON::ParserError, ArgumentError => e
+        raise CallbackError, error: :jwe_decryption_failed, reason: "JWE decryption failed: #{e.message}"
+      end
+
+      # Decrypts a JWE token using RSA-OAEP-256 (SHA-256 for OAEP hash and MGF1).
+      # The json-jwt gem does not support RSA-OAEP-256 natively, so this uses
+      # OpenSSL directly. Requires OpenSSL >= 3.0.
+      def decrypt_rsa_oaep_256(jwe_token, rsa_key) # rubocop:disable Naming/VariableNumber
+        if OpenSSL::VERSION.split('.').first.to_i < 3
+          raise CallbackError, error: :jwe_decryption_failed,
+                               reason: 'RSA-OAEP-256 requires OpenSSL >= 3.0'
+        end
+
+        protected_b64, encrypted_cek_b64, iv_b64, ciphertext_b64, auth_tag_b64 = jwe_token.split('.')
+
+        header     = JSON.parse(Base64.urlsafe_decode64(protected_b64))
+        enc        = header['enc']
+        cek        = rsa_key.decrypt(
+          Base64.urlsafe_decode64(encrypted_cek_b64),
+          rsa_padding_mode: 'oaep',
+          rsa_oaep_md: 'SHA256',
+          rsa_mgf1_md: 'SHA256'
+        )
+        init_vec   = Base64.urlsafe_decode64(iv_b64)
+        ciphertext = Base64.urlsafe_decode64(ciphertext_b64)
+        auth_tag   = Base64.urlsafe_decode64(auth_tag_b64)
+
+        case enc
+        when 'A128CBC-HS256' then decrypt_aes_cbc(cek, init_vec, ciphertext, auth_tag, protected_b64, 'aes-128-cbc', 16)
+        when 'A256CBC-HS512' then decrypt_aes_cbc(cek, init_vec, ciphertext, auth_tag, protected_b64, 'aes-256-cbc', 32)
+        when 'A128GCM'       then decrypt_aes_gcm(cek, init_vec, ciphertext, auth_tag, protected_b64, 'aes-128-gcm')
+        when 'A256GCM'       then decrypt_aes_gcm(cek, init_vec, ciphertext, auth_tag, protected_b64, 'aes-256-gcm')
+        else raise JSON::JWE::UnexpectedAlgorithm, "Unsupported enc: #{enc}"
+        end
+      end
+
+      # rubocop:disable Metrics/ParameterLists
+      def decrypt_aes_cbc(cek, init_vec, ciphertext, auth_tag, auth_data, cipher_name, key_half)
+        mac_key      = cek[0, key_half]
+        enc_key      = cek[key_half, key_half]
+        al           = [auth_data.bytesize * 8].pack('Q>')
+        hmac_input   = auth_data.b + init_vec + ciphertext + al
+        digest       = key_half == 16 ? OpenSSL::Digest.new('SHA256') : OpenSSL::Digest.new('SHA512')
+        expected_tag = OpenSSL::HMAC.digest(digest, mac_key, hmac_input)[0, key_half]
+        raise JSON::JWE::DecryptionFailed unless OpenSSL.fixed_length_secure_compare(expected_tag, auth_tag[0, key_half])
+
+        cipher = OpenSSL::Cipher.new(cipher_name)
+        cipher.decrypt
+        cipher.key = enc_key
+        cipher.iv  = init_vec
+        cipher.update(ciphertext) + cipher.final
+      end
+
+      def decrypt_aes_gcm(cek, init_vec, ciphertext, auth_tag, auth_data, cipher_name)
+        cipher = OpenSSL::Cipher.new(cipher_name)
+        cipher.decrypt
+        cipher.key       = cek
+        cipher.iv        = init_vec
+        cipher.auth_tag  = auth_tag
+        cipher.auth_data = auth_data.b
+        cipher.update(ciphertext) + cipher.final
+      end
+      # rubocop:enable Metrics/ParameterLists
+
+      def raise_missing_key(option_name)
+        raise CallbackError, error: :jwe_decryption_failed,
+                             reason: "#{option_name} is required for #{options.id_token_encryption_alg} decryption"
       end
 
       def verify_id_token!(id_token)
