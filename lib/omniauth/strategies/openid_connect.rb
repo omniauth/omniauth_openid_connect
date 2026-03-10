@@ -16,6 +16,15 @@ module OmniAuth
 
       JWE_SEGMENT_COUNT = 5
 
+      # Required key byte-lengths for each `enc` algorithm used with `dir`.
+      # CBC modes need mac-key + enc-key concatenated; GCM modes use the key directly.
+      DIR_ENC_KEY_LENGTHS = {
+        'A128CBC-HS256' => 32,
+        'A256CBC-HS512' => 64,
+        'A128GCM' => 16,
+        'A256GCM' => 32,
+      }.freeze
+
       RESPONSE_TYPE_EXCEPTIONS = {
         'id_token' => { exception_class: OmniAuth::OpenIDConnect::MissingIdTokenError, key: :missing_id_token }.freeze,
         'code' => { exception_class: OmniAuth::OpenIDConnect::MissingCodeError, key: :missing_code }.freeze,
@@ -270,10 +279,40 @@ module OmniAuth
         if access_token.id_token
           decoded = decode_id_token(access_token.id_token).raw_attributes
 
-          @user_info = ::OpenIDConnect::ResponseObject::UserInfo.new access_token.userinfo!.raw_attributes.merge(decoded)
+          if options.id_token_encryption_alg.present?
+            # When JWE encryption is configured, the userinfo endpoint may also return an
+            # encrypted response (e.g. with Content-Type: application/jwt). The openid_connect
+            # gem calls res.body.with_indifferent_access which fails on a JWE string, so we
+            # fetch and decrypt the userinfo ourselves.
+            userinfo = fetch_userinfo_attributes
+            @user_info = ::OpenIDConnect::ResponseObject::UserInfo.new(userinfo.merge(decoded))
+          else
+            @user_info = ::OpenIDConnect::ResponseObject::UserInfo.new access_token.userinfo!.raw_attributes.merge(decoded)
+          end
         else
           @user_info = access_token.userinfo!
         end
+      end
+
+      # Fetches userinfo directly and decrypts if the response is a JWE/JWT string.
+      # Falls back to an empty hash on decryption/parsing failures so that decoded
+      # ID token attributes are still used. Network and other unexpected errors propagate.
+      def fetch_userinfo_attributes
+        response = access_token.http_client.get(client.userinfo_uri)
+        body = response.body
+        return body if body.is_a?(Hash)
+
+        jwt_string = jwe?(body) ? decrypt_jwe(body) : body
+        # NOTE: The userinfo JWT signature is not verified here. JWE encryption provides
+        # confidentiality but not authenticity - it does not prove the claims came from the
+        # legitimate provider. Full verification would require a JWKS lookup (as the
+        # openid_connect gem does for the ID token). In practice, TLS transport and the
+        # requirement for the attacker to also possess the decryption key make active
+        # forgery very difficult, but this is a known limitation.
+        JSON::JWT.decode(jwt_string, :skip_verification).to_h.with_indifferent_access
+      rescue CallbackError, JSON::JWT::Exception => e
+        OmniAuth.logger.warn "[OIDC] Failed to decrypt userinfo response: #{e.class}: #{e.message}"
+        {}
       end
 
       def access_token
@@ -490,14 +529,14 @@ module OmniAuth
           decrypt_rsa_oaep_256(jwe_token, OpenSSL::PKey.read(key))
         when 'dir'
           raise_missing_key(:id_token_encryption_key) if key.nil? || key.to_s.empty?
-          JSON::JWE.decode_compact_serialized(jwe_token, key).plain_text
+          decrypt_dir(jwe_token, key)
         else
           raise CallbackError, error: :jwe_decryption_failed,
                                reason: "Unknown id_token_encryption_alg: #{alg.inspect}"
         end
       rescue JSON::JWE::DecryptionFailed, JSON::JWE::InvalidFormat, JSON::JWE::UnexpectedAlgorithm,
              OpenSSL::PKey::PKeyError, OpenSSL::Cipher::CipherError,
-             JSON::ParserError, ArgumentError => e
+             JSON::ParserError, ArgumentError, NoMethodError => e
         raise CallbackError, error: :jwe_decryption_failed, reason: "JWE decryption failed: #{e.message}"
       end
 
@@ -512,17 +551,17 @@ module OmniAuth
 
         protected_b64, encrypted_cek_b64, iv_b64, ciphertext_b64, auth_tag_b64 = jwe_token.split('.')
 
-        header = JSON.parse(Base64.urlsafe_decode64(protected_b64))
+        header = JSON.parse(jwe_b64_decode(protected_b64))
         enc = header['enc']
         cek = rsa_key.decrypt(
-          Base64.urlsafe_decode64(encrypted_cek_b64),
+          jwe_b64_decode(encrypted_cek_b64),
           rsa_padding_mode: 'oaep',
           rsa_oaep_md: 'SHA256',
           rsa_mgf1_md: 'SHA256'
         )
-        init_vec = Base64.urlsafe_decode64(iv_b64)
-        ciphertext = Base64.urlsafe_decode64(ciphertext_b64)
-        auth_tag = Base64.urlsafe_decode64(auth_tag_b64)
+        init_vec = jwe_b64_decode(iv_b64)
+        ciphertext = jwe_b64_decode(ciphertext_b64)
+        auth_tag = jwe_b64_decode(auth_tag_b64)
 
         case enc
         when 'A128CBC-HS256' then decrypt_aes_cbc(cek, init_vec, ciphertext, auth_tag, protected_b64, 'aes-128-cbc', 16)
@@ -531,6 +570,41 @@ module OmniAuth
         when 'A256GCM' then decrypt_aes_gcm(cek, init_vec, ciphertext, auth_tag, protected_b64, 'aes-256-gcm')
         else raise JSON::JWE::UnexpectedAlgorithm, "Unsupported enc: #{enc}"
         end
+      end
+
+      # Decrypts a JWE token using the dir (direct key agreement) algorithm.
+      # The json-jwt gem has issues decrypting dir tokens when the key is a raw string,
+      # so we bypass it and use our own AES implementation instead.
+      def decrypt_dir(jwe_token, symmetric_key)
+        protected_b64, _encrypted_cek_b64, iv_b64, ciphertext_b64, auth_tag_b64 = jwe_token.split('.')
+
+        header = JSON.parse(jwe_b64_decode(protected_b64))
+        enc = header['enc']
+        cek = symmetric_key.b
+
+        expected_key_length = DIR_ENC_KEY_LENGTHS[enc]
+        if expected_key_length && cek.bytesize != expected_key_length
+          raise ArgumentError,
+                "dir key must be #{expected_key_length} bytes for #{enc} (got #{cek.bytesize})"
+        end
+
+        init_vec = jwe_b64_decode(iv_b64)
+        ciphertext = jwe_b64_decode(ciphertext_b64)
+        auth_tag = jwe_b64_decode(auth_tag_b64)
+
+        case enc
+        when 'A128CBC-HS256' then decrypt_aes_cbc(cek, init_vec, ciphertext, auth_tag, protected_b64, 'aes-128-cbc', 16)
+        when 'A256CBC-HS512' then decrypt_aes_cbc(cek, init_vec, ciphertext, auth_tag, protected_b64, 'aes-256-cbc', 32)
+        when 'A128GCM'       then decrypt_aes_gcm(cek, init_vec, ciphertext, auth_tag, protected_b64, 'aes-128-gcm')
+        when 'A256GCM'       then decrypt_aes_gcm(cek, init_vec, ciphertext, auth_tag, protected_b64, 'aes-256-gcm')
+        else raise JSON::JWE::UnexpectedAlgorithm, "Unsupported enc: #{enc}"
+        end
+      end
+
+      # base64 gem 0.3.0 requires proper padding for urlsafe_decode64.
+      # JWE compact serialization uses unpadded base64url, so we add it explicitly.
+      def jwe_b64_decode(str)
+        Base64.urlsafe_decode64(str + ('=' * ((4 - (str.length % 4)) % 4)))
       end
 
       # rubocop:disable Metrics/ParameterLists

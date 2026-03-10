@@ -168,9 +168,15 @@ Supported key-wrapping algorithms and their required key type:
 |---------------------------|--------------------------------------------|--------------------------------|
 | `RSA-OAEP`                | PEM-encoded RSA private key                |                                |
 | `RSA-OAEP-256`            | PEM-encoded RSA private key                | Requires OpenSSL >= 3.0        |
-| `dir`                     | Raw symmetric key (string/bytes)           |                                |
+| `dir`                     | Raw symmetric key (string/bytes)           | See key-length note below      |
 
 All four JWE content encryption algorithms are supported: `A128GCM`, `A256GCM`, `A128CBC-HS256`, `A256CBC-HS512`.
+
+**Key lengths for `dir`:** The symmetric key must be exactly the right length for the chosen `enc` algorithm - `A128GCM`: 16 bytes, `A256GCM`: 32 bytes, `A128CBC-HS256`: 32 bytes (16 MAC + 16 ENC), `A256CBC-HS512`: 64 bytes (32 MAC + 32 ENC).
+
+#### Encrypted userinfo endpoint
+
+When `id_token_encryption_alg` is set, the userinfo endpoint response is also handled as a potentially encrypted JWT/JWE. The same `id_token_encryption_alg` and `id_token_encryption_key` values are used for both the ID token and the userinfo response - configure these to match whatever your provider uses for the userinfo endpoint. If your provider uses different keys or algorithms for the two, this integration is not currently supported.
 
 ## Additional notes
   * In some cases, you may want to go straight to the callback phase - e.g. when requested by a stateless client, like a mobile app.

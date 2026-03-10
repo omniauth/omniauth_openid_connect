@@ -161,18 +161,41 @@ class OpenIDConnectJweTest < StrategyTestCase
     assert_includes error.error_reason, 'id_token_encryption_key'
   end
 
-  def test_decrypt_jwe_dir_delegates_to_json_jwe
+  def test_decrypt_jwe_dir_round_trip_a128cbc_hs256
+    # A128CBC-HS256 requires a 32-byte CEK (16 mac + 16 enc)
+    symmetric_key = SecureRandom.bytes(32)
+    plaintext = 'test.jws.payload'
+    header = Base64.urlsafe_encode64({ alg: 'dir', enc: 'A128CBC-HS256' }.to_json, padding: false)
+    iv, ciphertext, auth_tag = encrypt_content('A128CBC-HS256', symmetric_key.b, plaintext, header)
+    jwe_token = [
+      header, '',
+      Base64.urlsafe_encode64(iv, padding: false),
+      Base64.urlsafe_encode64(ciphertext, padding: false),
+      Base64.urlsafe_encode64(auth_tag, padding: false)
+    ].join('.')
+
     strategy.options.id_token_encryption_alg = 'dir'
-    strategy.options.id_token_encryption_key = 'a' * 16
+    strategy.options.id_token_encryption_key = symmetric_key
 
-    mock_jwe = mock
-    mock_jwe.stubs(:plain_text).returns('decrypted.jws.token')
-    JSON::JWE.expects(:decode_compact_serialized)
-             .with('a.b.c.d.e', 'a' * 16)
-             .returns(mock_jwe)
+    assert_equal plaintext, strategy.send(:decrypt_jwe, jwe_token)
+  end
 
-    result = strategy.send(:decrypt_jwe, 'a.b.c.d.e')
-    assert_equal 'decrypted.jws.token', result
+  def test_decrypt_jwe_dir_round_trip_a128gcm
+    symmetric_key = SecureRandom.bytes(16)
+    plaintext = 'test.jws.payload'
+    header = Base64.urlsafe_encode64({ alg: 'dir', enc: 'A128GCM' }.to_json, padding: false)
+    iv, ciphertext, auth_tag = encrypt_content('A128GCM', symmetric_key, plaintext, header)
+    jwe_token = [
+      header, '',
+      Base64.urlsafe_encode64(iv, padding: false),
+      Base64.urlsafe_encode64(ciphertext, padding: false),
+      Base64.urlsafe_encode64(auth_tag, padding: false)
+    ].join('.')
+
+    strategy.options.id_token_encryption_alg = 'dir'
+    strategy.options.id_token_encryption_key = symmetric_key
+
+    assert_equal plaintext, strategy.send(:decrypt_jwe, jwe_token)
   end
 
   # ---------------------------------------------------------------------------
@@ -193,26 +216,29 @@ class OpenIDConnectJweTest < StrategyTestCase
   # ---------------------------------------------------------------------------
 
   def test_decrypt_jwe_wraps_decryption_failed
-    strategy.options.id_token_encryption_alg = 'dir'
-    strategy.options.id_token_encryption_key = 'key'
+    rsa_key = OpenSSL::PKey::RSA.generate(2048)
+    strategy.options.id_token_encryption_alg = 'RSA-OAEP'
+    strategy.options.id_token_encryption_key = rsa_key.to_pem
     JSON::JWE.stubs(:decode_compact_serialized).raises(JSON::JWE::DecryptionFailed)
     assert_raises(OmniAuth::Strategies::OpenIDConnect::CallbackError) do
       strategy.send(:decrypt_jwe, 'a.b.c.d.e')
     end
   end
 
-  def test_decrypt_jwe_wraps_cipher_error
+  def test_decrypt_jwe_dir_wraps_malformed_token
     strategy.options.id_token_encryption_alg = 'dir'
     strategy.options.id_token_encryption_key = 'key'
-    JSON::JWE.stubs(:decode_compact_serialized).raises(OpenSSL::Cipher::CipherError)
+    # Passing a malformed JWE to decrypt_dir triggers a JSON::ParserError on the header,
+    # which is rescued and wrapped in a CallbackError.
     assert_raises(OmniAuth::Strategies::OpenIDConnect::CallbackError) do
       strategy.send(:decrypt_jwe, 'a.b.c.d.e')
     end
   end
 
   def test_decrypt_jwe_wraps_argument_error
-    strategy.options.id_token_encryption_alg = 'dir'
-    strategy.options.id_token_encryption_key = 'key'
+    rsa_key = OpenSSL::PKey::RSA.generate(2048)
+    strategy.options.id_token_encryption_alg = 'RSA-OAEP'
+    strategy.options.id_token_encryption_key = rsa_key.to_pem
     JSON::JWE.stubs(:decode_compact_serialized).raises(ArgumentError, 'invalid base64')
     assert_raises(OmniAuth::Strategies::OpenIDConnect::CallbackError) do
       strategy.send(:decrypt_jwe, 'a.b.c.d.e')
@@ -237,5 +263,168 @@ class OpenIDConnectJweTest < StrategyTestCase
     strategy.send(:decode_id_token, 'h.e.i.c.t')
   rescue StandardError
     nil # super will fail without a full OIDC setup; we only care decrypt_jwe was called
+  end
+
+  # ---------------------------------------------------------------------------
+  # #user_info and #fetch_userinfo_attributes - encrypted userinfo endpoint
+  # ---------------------------------------------------------------------------
+
+  # A strategy instance without the default user_info stub, for testing user_info directly.
+  def jwe_strategy
+    @jwe_strategy ||= OmniAuth::Strategies::OpenIDConnect.new(DummyApp.new).tap do |s|
+      s.options.client_options.identifier = @identifier
+      s.options.client_options.secret = @secret
+      s.stubs(:request).returns(request)
+      s.stubs(:script_name).returns('')
+    end
+  end
+
+  def test_user_info_uses_fetch_userinfo_attributes_when_encryption_configured
+    rsa_key = OpenSSL::PKey::RSA.generate(2048)
+    id_token_claims = { sub: 'user123', email: 'user@example.com', given_name: 'Ada' }
+    id_token_jws = JSON::JWT.new(id_token_claims).sign(rsa_key, :RS256).to_s
+
+    mock_access_token = stub(id_token: id_token_jws, http_client: stub)
+    decoded = stub(raw_attributes: id_token_claims)
+
+    jwe_strategy.options.id_token_encryption_alg = 'RSA-OAEP'
+    jwe_strategy.stubs(:access_token).returns(mock_access_token)
+    jwe_strategy.stubs(:decode_id_token).with(id_token_jws).returns(decoded)
+    jwe_strategy.stubs(:fetch_userinfo_attributes).returns({ sub: 'user123', phone_number: '+32499000000' })
+
+    result = jwe_strategy.send(:user_info)
+    assert_equal 'user123', result.sub
+    assert_equal 'Ada', result.given_name
+    assert_equal '+32499000000', result.phone_number
+  end
+
+  def test_user_info_falls_back_to_standard_path_when_no_encryption
+    jwe_strategy.options.id_token_encryption_alg = nil
+    mock_access_token = stub(id_token: nil)
+    expected_userinfo = OpenIDConnect::ResponseObject::UserInfo.new(sub: 'user456')
+
+    jwe_strategy.stubs(:access_token).returns(mock_access_token)
+    mock_access_token.stubs(:userinfo!).returns(expected_userinfo)
+
+    result = jwe_strategy.send(:user_info)
+    assert_equal 'user456', result.sub
+  end
+
+  def test_fetch_userinfo_attributes_returns_hash_body_unchanged
+    mock_http_client = stub
+    mock_access_token = stub(http_client: mock_http_client)
+    mock_client = stub(userinfo_uri: 'https://oidc.example.com/userinfo')
+    body = { sub: 'user123', email: 'user@example.com' }
+
+    jwe_strategy.options.id_token_encryption_alg = 'RSA-OAEP'
+    jwe_strategy.stubs(:access_token).returns(mock_access_token)
+    jwe_strategy.stubs(:client).returns(mock_client)
+    mock_http_client.stubs(:get).returns(stub(body: body))
+
+    result = jwe_strategy.send(:fetch_userinfo_attributes)
+    assert_equal body, result
+  end
+
+  def test_fetch_userinfo_attributes_decodes_plain_jwt_string_body
+    rsa_key = OpenSSL::PKey::RSA.generate(2048)
+    claims = { sub: 'user123', phone_number: '+32499000000' }
+    jws = JSON::JWT.new(claims).sign(rsa_key, :RS256).to_s
+
+    mock_http_client = stub
+    mock_access_token = stub(http_client: mock_http_client)
+    mock_client = stub(userinfo_uri: 'https://oidc.example.com/userinfo')
+
+    jwe_strategy.options.id_token_encryption_alg = 'RSA-OAEP'
+    jwe_strategy.stubs(:access_token).returns(mock_access_token)
+    jwe_strategy.stubs(:client).returns(mock_client)
+    mock_http_client.stubs(:get).returns(stub(body: jws))
+
+    result = jwe_strategy.send(:fetch_userinfo_attributes)
+    assert_equal 'user123', result[:sub]
+    assert_equal '+32499000000', result[:phone_number]
+  end
+
+  def test_fetch_userinfo_attributes_decrypts_jwe_string_body
+    symmetric_key = SecureRandom.bytes(32)
+    plaintext_claims = { sub: 'user123', phone_number: '+32499000000' }
+    # Build a dir JWE wrapping a signed JWT
+    rsa_key = OpenSSL::PKey::RSA.generate(2048)
+    inner_jwt = JSON::JWT.new(plaintext_claims).sign(rsa_key, :RS256).to_s
+    header = Base64.urlsafe_encode64({ alg: 'dir', enc: 'A128CBC-HS256' }.to_json, padding: false)
+    iv, ciphertext, auth_tag = encrypt_content('A128CBC-HS256', symmetric_key.b, inner_jwt, header)
+    jwe_body = [
+      header, '',
+      Base64.urlsafe_encode64(iv, padding: false),
+      Base64.urlsafe_encode64(ciphertext, padding: false),
+      Base64.urlsafe_encode64(auth_tag, padding: false)
+    ].join('.')
+
+    mock_http_client = stub
+    mock_access_token = stub(http_client: mock_http_client)
+    mock_client = stub(userinfo_uri: 'https://oidc.example.com/userinfo')
+
+    jwe_strategy.options.id_token_encryption_alg = 'dir'
+    jwe_strategy.options.id_token_encryption_key = symmetric_key
+    jwe_strategy.stubs(:access_token).returns(mock_access_token)
+    jwe_strategy.stubs(:client).returns(mock_client)
+    mock_http_client.stubs(:get).returns(stub(body: jwe_body))
+
+    result = jwe_strategy.send(:fetch_userinfo_attributes)
+    assert_equal 'user123', result[:sub]
+    assert_equal '+32499000000', result[:phone_number]
+  end
+
+  def test_fetch_userinfo_attributes_returns_empty_hash_on_decryption_error
+    mock_http_client = stub
+    mock_access_token = stub(http_client: mock_http_client)
+    mock_client = stub(userinfo_uri: 'https://oidc.example.com/userinfo')
+
+    jwe_strategy.options.id_token_encryption_alg = 'RSA-OAEP'
+    jwe_strategy.stubs(:access_token).returns(mock_access_token)
+    jwe_strategy.stubs(:client).returns(mock_client)
+    # A JWE-shaped body triggers decrypt_jwe which raises CallbackError on failure
+    jwe_strategy.stubs(:jwe?).returns(true)
+    jwe_strategy.stubs(:decrypt_jwe).raises(
+      OmniAuth::Strategies::OpenIDConnect::CallbackError.new(error: :jwe_decryption_failed, reason: 'bad key')
+    )
+    mock_http_client.stubs(:get).returns(stub(body: 'a.b.c.d.e'))
+
+    result = jwe_strategy.send(:fetch_userinfo_attributes)
+    assert_equal({}, result)
+  end
+
+  def test_fetch_userinfo_attributes_propagates_network_errors
+    mock_http_client = stub
+    mock_access_token = stub(http_client: mock_http_client)
+    mock_client = stub(userinfo_uri: 'https://oidc.example.com/userinfo')
+
+    jwe_strategy.options.id_token_encryption_alg = 'RSA-OAEP'
+    jwe_strategy.stubs(:access_token).returns(mock_access_token)
+    jwe_strategy.stubs(:client).returns(mock_client)
+    mock_http_client.stubs(:get).raises(StandardError, 'connection failed')
+
+    assert_raises(StandardError) do
+      jwe_strategy.send(:fetch_userinfo_attributes)
+    end
+  end
+
+  def test_decrypt_dir_raises_on_wrong_key_length
+    strategy.options.id_token_encryption_alg = 'dir'
+    strategy.options.id_token_encryption_key = 'tooshort'
+
+    symmetric_key = SecureRandom.bytes(32)
+    header = Base64.urlsafe_encode64({ alg: 'dir', enc: 'A128CBC-HS256' }.to_json, padding: false)
+    iv, ciphertext, auth_tag = encrypt_content('A128CBC-HS256', symmetric_key.b, 'payload', header)
+    jwe_token = [
+      header, '',
+      Base64.urlsafe_encode64(iv, padding: false),
+      Base64.urlsafe_encode64(ciphertext, padding: false),
+      Base64.urlsafe_encode64(auth_tag, padding: false)
+    ].join('.')
+
+    error = assert_raises(OmniAuth::Strategies::OpenIDConnect::CallbackError) do
+      strategy.send(:decrypt_jwe, jwe_token)
+    end
+    assert_includes error.error_reason, 'dir key must be 32 bytes'
   end
 end
