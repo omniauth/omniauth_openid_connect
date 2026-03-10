@@ -285,6 +285,12 @@ module OmniAuth
             # gem calls res.body.with_indifferent_access which fails on a JWE string, so we
             # fetch and decrypt the userinfo ourselves.
             userinfo = fetch_userinfo_attributes
+            # OIDC Core §5.3.2: the sub in the UserInfo response MUST exactly match the sub
+            # in the ID Token; if they differ, the UserInfo response MUST NOT be used.
+            if userinfo.present? && userinfo[:sub].to_s != decoded[:sub].to_s
+              raise CallbackError, error: :userinfo_sub_mismatch,
+                                   reason: "UserInfo sub (#{userinfo[:sub].inspect}) does not match ID token sub (#{decoded[:sub].inspect})"
+            end
             @user_info = ::OpenIDConnect::ResponseObject::UserInfo.new(userinfo.merge(decoded))
           else
             @user_info = ::OpenIDConnect::ResponseObject::UserInfo.new access_token.userinfo!.raw_attributes.merge(decoded)

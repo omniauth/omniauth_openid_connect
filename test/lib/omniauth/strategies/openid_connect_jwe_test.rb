@@ -298,6 +298,24 @@ class OpenIDConnectJweTest < StrategyTestCase
     assert_equal '+32499000000', result.phone_number
   end
 
+  def test_user_info_raises_on_sub_mismatch
+    rsa_key = OpenSSL::PKey::RSA.generate(2048)
+    id_token_claims = { sub: 'user123' }
+    id_token_jws = JSON::JWT.new(id_token_claims).sign(rsa_key, :RS256).to_s
+
+    mock_access_token = stub(id_token: id_token_jws)
+    decoded = stub(raw_attributes: id_token_claims)
+
+    jwe_strategy.options.id_token_encryption_alg = 'RSA-OAEP'
+    jwe_strategy.stubs(:access_token).returns(mock_access_token)
+    jwe_strategy.stubs(:decode_id_token).with(id_token_jws).returns(decoded)
+    jwe_strategy.stubs(:fetch_userinfo_attributes).returns({ sub: 'attacker', email: 'evil@example.com' })
+
+    assert_raises(OmniAuth::Strategies::OpenIDConnect::CallbackError) do
+      jwe_strategy.send(:user_info)
+    end
+  end
+
   def test_user_info_falls_back_to_standard_path_when_no_encryption
     jwe_strategy.options.id_token_encryption_alg = nil
     mock_access_token = stub(id_token: nil)
