@@ -60,6 +60,7 @@ module OmniAuth
       option :post_logout_redirect_uri
       option :extra_authorize_params, {}
       option :allow_authorize_params, []
+      option :allow_logout_params, []
       option :uid_field, 'sub'
       option :pkce, false
       option :pkce_verifier, nil
@@ -172,7 +173,7 @@ module OmniAuth
         return unless end_session_endpoint_is_valid?
 
         end_session_uri = URI(client_options.end_session_endpoint)
-        end_session_uri.query = encoded_post_logout_redirect_uri
+        end_session_uri.query = encoded_logout_parameters
         end_session_uri.to_s
       end
 
@@ -427,12 +428,30 @@ module OmniAuth
         "#{ client_options.redirect_uri }?redirect_uri=#{ CGI.escape(params['redirect_uri']) }"
       end
 
-      def encoded_post_logout_redirect_uri
-        return unless options.post_logout_redirect_uri
+      def encoded_logout_parameters
+        opts = {
+          post_logout_redirect_uri: options.post_logout_redirect_uri,
+          id_token_hint: params['id_token_hint'],
+          logout_hint: params['logout_hint'],
+          ui_locales: params['ui_locales'],
+        }
 
-        URI.encode_www_form(
-          post_logout_redirect_uri: options.post_logout_redirect_uri
-        )
+        options.allow_logout_params.each do |key|
+          next if opts.key?(key)
+
+          opts[key] = case key.to_sym
+                      when :client_id
+                        client_options.identifier
+                      when :state
+                        new_state
+                      else
+                        request.params[key]
+                      end
+        end
+        logout_params = opts.reject { |_k, v| v.nil? }
+        return if logout_params.empty?
+
+        URI.encode_www_form(logout_params)
       end
 
       def end_session_endpoint_is_valid?
