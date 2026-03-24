@@ -83,7 +83,8 @@ module OmniAuth
 
       option :logout_path, '/logout'
       option :id_token_encryption_alg, nil # e.g. 'RSA-OAEP', 'RSA-OAEP-256', 'dir'
-      option :id_token_encryption_key, nil # PEM string for RSA algorithms; raw bytes/string for 'dir'
+      option :id_token_encryption_key, nil # PEM string for RSA algorithms; base64url-encoded bytes for 'dir'
+      option :id_token_encryption_key_file, nil # path to a file containing the key (PEM or base64url for 'dir')
 
       def uid
         user_info.raw_attributes[options.uid_field.to_sym] || user_info.sub
@@ -524,7 +525,7 @@ module OmniAuth
 
       def decrypt_jwe(jwe_token)
         alg = options.id_token_encryption_alg.to_s
-        key = options.id_token_encryption_key
+        key = resolve_encryption_key
 
         case alg
         when 'RSA-OAEP'
@@ -581,12 +582,13 @@ module OmniAuth
       # Decrypts a JWE token using the dir (direct key agreement) algorithm.
       # The json-jwt gem has issues decrypting dir tokens when the key is a raw string,
       # so we bypass it and use our own AES implementation instead.
+      # The symmetric_key must be base64url-encoded (with or without padding).
       def decrypt_dir(jwe_token, symmetric_key)
         protected_b64, _encrypted_cek_b64, iv_b64, ciphertext_b64, auth_tag_b64 = jwe_token.split('.')
 
         header = JSON.parse(jwe_b64_decode(protected_b64))
         enc = header['enc']
-        cek = symmetric_key.b
+        cek = jwe_b64_decode(symmetric_key)
 
         expected_key_length = DIR_ENC_KEY_LENGTHS[enc]
         if expected_key_length && cek.bytesize != expected_key_length
@@ -640,6 +642,14 @@ module OmniAuth
         cipher.update(ciphertext) + cipher.final
       end
       # rubocop:enable Metrics/ParameterLists
+
+      def resolve_encryption_key
+        if options.id_token_encryption_key_file.present?
+          File.read(options.id_token_encryption_key_file)
+        else
+          options.id_token_encryption_key
+        end
+      end
 
       def raise_missing_key(option_name)
         raise CallbackError, error: :jwe_decryption_failed,

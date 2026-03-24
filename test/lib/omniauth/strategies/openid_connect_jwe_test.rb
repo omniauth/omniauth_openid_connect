@@ -163,10 +163,10 @@ class OpenIDConnectJweTest < StrategyTestCase
 
   def test_decrypt_jwe_dir_round_trip_a128cbc_hs256
     # A128CBC-HS256 requires a 32-byte CEK (16 mac + 16 enc)
-    symmetric_key = SecureRandom.bytes(32)
+    raw_key = SecureRandom.bytes(32)
     plaintext = 'test.jws.payload'
     header = Base64.urlsafe_encode64({ alg: 'dir', enc: 'A128CBC-HS256' }.to_json, padding: false)
-    iv, ciphertext, auth_tag = encrypt_content('A128CBC-HS256', symmetric_key.b, plaintext, header)
+    iv, ciphertext, auth_tag = encrypt_content('A128CBC-HS256', raw_key, plaintext, header)
     jwe_token = [
       header, '',
       Base64.urlsafe_encode64(iv, padding: false),
@@ -175,16 +175,16 @@ class OpenIDConnectJweTest < StrategyTestCase
     ].join('.')
 
     strategy.options.id_token_encryption_alg = 'dir'
-    strategy.options.id_token_encryption_key = symmetric_key
+    strategy.options.id_token_encryption_key = Base64.urlsafe_encode64(raw_key, padding: false)
 
     assert_equal plaintext, strategy.send(:decrypt_jwe, jwe_token)
   end
 
   def test_decrypt_jwe_dir_round_trip_a128gcm
-    symmetric_key = SecureRandom.bytes(16)
+    raw_key = SecureRandom.bytes(16)
     plaintext = 'test.jws.payload'
     header = Base64.urlsafe_encode64({ alg: 'dir', enc: 'A128GCM' }.to_json, padding: false)
-    iv, ciphertext, auth_tag = encrypt_content('A128GCM', symmetric_key, plaintext, header)
+    iv, ciphertext, auth_tag = encrypt_content('A128GCM', raw_key, plaintext, header)
     jwe_token = [
       header, '',
       Base64.urlsafe_encode64(iv, padding: false),
@@ -193,9 +193,51 @@ class OpenIDConnectJweTest < StrategyTestCase
     ].join('.')
 
     strategy.options.id_token_encryption_alg = 'dir'
-    strategy.options.id_token_encryption_key = symmetric_key
+    strategy.options.id_token_encryption_key = Base64.urlsafe_encode64(raw_key, padding: false)
 
     assert_equal plaintext, strategy.send(:decrypt_jwe, jwe_token)
+  end
+
+  def test_decrypt_jwe_dir_round_trip_using_key_file
+    raw_key = SecureRandom.bytes(16)
+    plaintext = 'test.jws.payload'
+    header = Base64.urlsafe_encode64({ alg: 'dir', enc: 'A128GCM' }.to_json, padding: false)
+    iv, ciphertext, auth_tag = encrypt_content('A128GCM', raw_key, plaintext, header)
+    jwe_token = [
+      header, '',
+      Base64.urlsafe_encode64(iv, padding: false),
+      Base64.urlsafe_encode64(ciphertext, padding: false),
+      Base64.urlsafe_encode64(auth_tag, padding: false)
+    ].join('.')
+
+    Tempfile.create('jwe_key') do |f|
+      f.write(Base64.urlsafe_encode64(raw_key, padding: false))
+      f.flush
+
+      strategy.options.id_token_encryption_alg = 'dir'
+      strategy.options.id_token_encryption_key_file = f.path
+
+      assert_equal plaintext, strategy.send(:decrypt_jwe, jwe_token)
+    end
+  end
+
+  def test_decrypt_jwe_rsa_oaep_round_trip_using_key_file
+    rsa_key = OpenSSL::PKey::RSA.generate(2048)
+    mock_jwe = mock
+    mock_jwe.stubs(:plain_text).returns('decrypted.jws.token')
+    JSON::JWE.expects(:decode_compact_serialized)
+             .with('a.b.c.d.e', instance_of(OpenSSL::PKey::RSA))
+             .returns(mock_jwe)
+
+    Tempfile.create(['jwe_key', '.pem']) do |f|
+      f.write(rsa_key.to_pem)
+      f.flush
+
+      strategy.options.id_token_encryption_alg = 'RSA-OAEP'
+      strategy.options.id_token_encryption_key_file = f.path
+
+      assert_equal 'decrypted.jws.token', strategy.send(:decrypt_jwe, 'a.b.c.d.e')
+    end
   end
 
   # ---------------------------------------------------------------------------
@@ -363,13 +405,13 @@ class OpenIDConnectJweTest < StrategyTestCase
   end
 
   def test_fetch_userinfo_attributes_decrypts_jwe_string_body
-    symmetric_key = SecureRandom.bytes(32)
+    raw_key = SecureRandom.bytes(32)
     plaintext_claims = { sub: 'user123', phone_number: '+32499000000' }
     # Build a dir JWE wrapping a signed JWT
     rsa_key = OpenSSL::PKey::RSA.generate(2048)
     inner_jwt = JSON::JWT.new(plaintext_claims).sign(rsa_key, :RS256).to_s
     header = Base64.urlsafe_encode64({ alg: 'dir', enc: 'A128CBC-HS256' }.to_json, padding: false)
-    iv, ciphertext, auth_tag = encrypt_content('A128CBC-HS256', symmetric_key.b, inner_jwt, header)
+    iv, ciphertext, auth_tag = encrypt_content('A128CBC-HS256', raw_key, inner_jwt, header)
     jwe_body = [
       header, '',
       Base64.urlsafe_encode64(iv, padding: false),
@@ -382,7 +424,7 @@ class OpenIDConnectJweTest < StrategyTestCase
     mock_client = stub(userinfo_uri: 'https://oidc.example.com/userinfo')
 
     jwe_strategy.options.id_token_encryption_alg = 'dir'
-    jwe_strategy.options.id_token_encryption_key = symmetric_key
+    jwe_strategy.options.id_token_encryption_key = Base64.urlsafe_encode64(raw_key, padding: false)
     jwe_strategy.stubs(:access_token).returns(mock_access_token)
     jwe_strategy.stubs(:client).returns(mock_client)
     mock_http_client.stubs(:get).returns(stub(body: jwe_body))

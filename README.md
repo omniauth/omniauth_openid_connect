@@ -97,7 +97,8 @@ end
 | logout_path                  | The log out is only triggered when the request path ends on this path                                                                                                    | no       | '/logout'                     | '/sign_out'                                         |
 | acr_values                   | Authentication Class Reference (ACR) values to be passed to the authorize_uri to enforce a specific level, see [RFC9470](https://www.rfc-editor.org/rfc/rfc9470.html)    | no       | nil                           | "c1 c2"                                             |
 | id_token_encryption_alg      | Key-wrapping algorithm used by the provider to encrypt the ID token as a JWE. When set, the token is decrypted before verification. See [JWE support](#jwe-support) below. | no       | nil                           | "RSA-OAEP", "RSA-OAEP-256", "dir"                  |
-| id_token_encryption_key      | Decryption key matching `id_token_encryption_alg`. PEM-encoded private key for RSA algorithms; raw string/bytes for `dir`. | no       | nil                           |                                                     |
+| id_token_encryption_key      | Decryption key matching `id_token_encryption_alg`. PEM-encoded private key for RSA algorithms; base64url-encoded bytes for `dir`. Mutually exclusive with `id_token_encryption_key_file`. | no       | nil                           |                                                     |
+| id_token_encryption_key_file | Path to a file containing the decryption key. Same format as `id_token_encryption_key` (PEM for RSA; base64url for `dir`). Useful when loading config from JSON or when keeping secrets out of application config. | no       | nil                           |                                                     |
 
 ### Client Config Options
 
@@ -152,13 +153,21 @@ These are the configuration options for the client_options hash of the configura
 
 ### JWE Support
 
-Some OpenID Connect providers (e.g. the Belgian [It's Me](https://www.itsme-id.com/) identity provider) encrypt the ID token as a [JWE](https://www.rfc-editor.org/rfc/rfc7516) before returning it. Set `id_token_encryption_alg` and `id_token_encryption_key` to have the token transparently decrypted before verification:
+Some OpenID Connect providers (e.g. the Belgian [It's Me](https://www.itsme-id.com/) identity provider) encrypt the ID token as a [JWE](https://www.rfc-editor.org/rfc/rfc7516) before returning it. Set `id_token_encryption_alg` and `id_token_encryption_key` (or `id_token_encryption_key_file`) to have the token transparently decrypted before verification:
 
 ```ruby
+# Inline key value
 provider :openid_connect, {
   # ... standard options ...
   id_token_encryption_alg: "RSA-OAEP-256",
   id_token_encryption_key: File.read("private_key.pem"),
+}
+
+# Or point to a key file (useful when loading config from JSON or environment variables)
+provider :openid_connect, {
+  # ... standard options ...
+  id_token_encryption_alg: "RSA-OAEP-256",
+  id_token_encryption_key_file: "/path/to/private_key.pem",
 }
 ```
 
@@ -168,11 +177,11 @@ Supported key-wrapping algorithms and their required key type:
 |---------------------------|--------------------------------------------|--------------------------------|
 | `RSA-OAEP`                | PEM-encoded RSA private key                |                                |
 | `RSA-OAEP-256`            | PEM-encoded RSA private key                | Requires OpenSSL >= 3.0        |
-| `dir`                     | Raw symmetric key (string/bytes)           | See key-length note below      |
+| `dir`                     | Base64url-encoded symmetric key bytes      | See key-length note below      |
 
 All four JWE content encryption algorithms are supported: `A128GCM`, `A256GCM`, `A128CBC-HS256`, `A256CBC-HS512`.
 
-**Key lengths for `dir`:** The symmetric key must be exactly the right length for the chosen `enc` algorithm - `A128GCM`: 16 bytes, `A256GCM`: 32 bytes, `A128CBC-HS256`: 32 bytes (16 MAC + 16 ENC), `A256CBC-HS512`: 64 bytes (32 MAC + 32 ENC).
+**Key lengths for `dir`:** The symmetric key must be exactly the right length for the chosen `enc` algorithm - `A128GCM`: 16 bytes, `A256GCM`: 32 bytes, `A128CBC-HS256`: 32 bytes (16 MAC + 16 ENC), `A256CBC-HS512`: 64 bytes (32 MAC + 32 ENC). The key must be base64url-encoded when passed as `id_token_encryption_key` or stored in an `id_token_encryption_key_file`.
 
 #### Encrypted userinfo endpoint
 
