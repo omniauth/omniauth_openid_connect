@@ -260,14 +260,27 @@ module OmniAuth
       # Otherwise, fall back to client_options.scheme/host/port.
       def discovery_base_url
         issuer = options.issuer.to_s
+        
+        # Debug logging to see what we're working with
+        if defined?(Rails) && Rails.logger
+          Rails.logger.debug "[OpenIDConnect] discovery_base_url - options.issuer: #{options.issuer.inspect}"
+          Rails.logger.debug "[OpenIDConnect] discovery_base_url - issuer string: #{issuer}"
+        end
+        
         if issuer.match?(/\Ahttps?:\/\//)
           # Use the full issuer URL as-is for discovery
           # The discovery endpoint will be: issuer + '/.well-known/openid-configuration'
+          if defined?(Rails) && Rails.logger
+            Rails.logger.debug "[OpenIDConnect] discovery_base_url - using issuer as-is: #{issuer}"
+          end
           issuer
         else
           # Issuer doesn't have a scheme, construct URL from client_options
           resource = "#{client_options.scheme}://#{client_options.host}"
           resource = "#{resource}:#{client_options.port}" if client_options.port
+          if defined?(Rails) && Rails.logger
+            Rails.logger.debug "[OpenIDConnect] discovery_base_url - constructed from client_options: #{resource}"
+          end
           resource
         end
       end
