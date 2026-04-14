@@ -115,7 +115,18 @@ module OmniAuth
       end
 
       def request_phase
+        # Debug logging to diagnose issuer issues
+        if defined?(Rails) && Rails.logger
+          Rails.logger.debug "[OpenIDConnect] request_phase - options.issuer BEFORE: #{options.issuer.inspect}"
+          Rails.logger.debug "[OpenIDConnect] request_phase - options.issuer.to_s.empty?: #{options.issuer.to_s.empty?}"
+        end
+        
         options.issuer = issuer if options.issuer.to_s.empty?
+        
+        if defined?(Rails) && Rails.logger
+          Rails.logger.debug "[OpenIDConnect] request_phase - options.issuer AFTER: #{options.issuer.inspect}"
+        end
+        
         discover!
         redirect authorize_uri
       end
