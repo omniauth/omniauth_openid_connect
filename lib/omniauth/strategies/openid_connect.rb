@@ -114,19 +114,8 @@ module OmniAuth
         @config ||= ::OpenIDConnect::Discovery::Provider::Config.discover!(discovery_base_url)
       end
 
-      def request_phase
-        puts "\nHERE I AM\n"
-        # Debug logging to diagnose issuer issues
-        if defined?(Rails) && Rails.logger
-          puts "[OpenIDConnect] request_phase - options.issuer BEFORE: #{options.issuer.inspect}"
-          puts "[OpenIDConnect] request_phase - options.issuer.to_s.empty?: #{options.issuer.to_s.empty?}"
-        end
-        
+      def request_phase        
         options.issuer = issuer if issuer_empty?
-        
-        if defined?(Rails) && Rails.logger
-          puts "[OpenIDConnect] request_phase - options.issuer AFTER: #{options.issuer.inspect}"
-        end
         
         discover!
         redirect authorize_uri
@@ -285,13 +274,6 @@ module OmniAuth
         issuer_value = issuer_value.call if issuer_value.respond_to?(:call)
         issuer = issuer_value.to_s
         
-        # Debug logging to see what we're working with
-        if defined?(Rails) && Rails.logger
-          puts "[OpenIDConnect] discovery_base_url - options.issuer: #{options.issuer.inspect}"
-          puts "[OpenIDConnect] discovery_base_url - issuer value: #{issuer_value.inspect}"
-          puts "[OpenIDConnect] discovery_base_url - issuer string: #{issuer}"
-        end
-        
         if issuer.match?(/\Ahttps?:\/\//)
           # Use the full issuer URL as-is for discovery
           # The discovery endpoint will be: issuer + '/.well-known/openid-configuration'
@@ -303,9 +285,6 @@ module OmniAuth
           # Issuer doesn't have a scheme, construct URL from client_options
           resource = "#{client_options.scheme}://#{client_options.host}"
           resource = "#{resource}:#{client_options.port}" if client_options.port
-          if defined?(Rails) && Rails.logger
-            puts "[OpenIDConnect] discovery_base_url - constructed from client_options: #{resource}"
-          end
           resource
         end
       end
@@ -341,8 +320,7 @@ module OmniAuth
 
       def discover!
         return unless options.discovery
-        puts "I am in discover"
-        puts config
+
         client_options.authorization_endpoint = config.authorization_endpoint
         client_options.token_endpoint = config.token_endpoint
         client_options.userinfo_endpoint = config.userinfo_endpoint
