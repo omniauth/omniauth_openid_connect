@@ -110,7 +110,8 @@ module OmniAuth
       end
 
       def config
-        @config ||= ::OpenIDConnect::Discovery::Provider::Config.discover!(options.issuer)
+        configure_discovery_scheme
+        @config ||= ::OpenIDConnect::Discovery::Provider::Config.discover!(discovery_base_url)
       end
 
       def request_phase
@@ -250,6 +251,63 @@ module OmniAuth
         ::OpenIDConnect::Discovery::Provider.discover!(resource).issuer
       end
 
+      # When discovery is enabled we need a *stable* base URL.
+      #
+      # If the user provides an issuer without an explicit scheme (e.g. "keycloak:8080/realms/foo"),
+      # passing it to discovery can lead to unintended HTTPS/TLS attempts depending on underlying client defaults.
+      #
+      # Recommended behavior: only trust options.issuer for discovery if it is an absolute URI with http/https scheme.
+      # Otherwise, fall back to client_options.scheme/host/port.
+      def discovery_base_url
+        issuer = options.issuer.to_s
+        if issuer.match?(/\Ahttps?:\/\//)
+          uri = URI.parse(issuer)
+          # If path is empty or just '/', use issuer as-is (it's already a base URL)
+          if uri.path.nil? || uri.path.empty? || uri.path == '/'
+            issuer
+          else
+            # Has a real path beyond '/', extract base URL
+            resource = "#{uri.scheme}://#{uri.host}"
+            default_port = (uri.scheme == 'https') ? 443 : 80
+            resource = "#{resource}:#{uri.port}" if uri.port != default_port
+            resource
+          end
+        else
+          resource = "#{client_options.scheme}://#{client_options.host}"
+          resource = "#{resource}:#{client_options.port}" if client_options.port
+          resource
+        end
+      end
+
+      # Configure the SWD (Simple Web Discovery) library to use the correct URI scheme.
+      #
+      # The SWD library (used by openid_connect gem for discovery) defaults to URI::HTTPS,
+      # which causes SSL connection attempts even when an HTTP URL is explicitly provided.
+      # This results in "SSL_connect" errors when connecting to non-SSL servers (e.g.,
+      # development Keycloak instances running on HTTP).
+      #
+      # This method fixes the issue by setting SWD.url_builder to URI::HTTP or URI::HTTPS
+      # based on the actual scheme of the discovery_base_url, ensuring the gem respects
+      # the explicitly configured protocol.
+      #
+      # See: https://github.com/nov/openid_connect/issues/47
+      def configure_discovery_scheme
+        base_url = discovery_base_url
+        return if base_url.nil? || base_url.empty?
+
+        uri = URI.parse(base_url)
+        
+        # Set SWD.url_builder to use HTTP or HTTPS based on the discovery URL scheme
+        # This prevents the gem from forcing HTTPS when HTTP is explicitly specified
+        if uri.scheme == 'http'
+          require 'swd'
+          SWD.url_builder = URI::HTTP
+        elsif uri.scheme == 'https'
+          require 'swd'
+          SWD.url_builder = URI::HTTPS
+        end
+      end
+
       def discover!
         return unless options.discovery
 
@@ -258,6 +316,9 @@ module OmniAuth
         client_options.userinfo_endpoint = config.userinfo_endpoint
         client_options.jwks_uri = config.jwks_uri
         client_options.end_session_endpoint = config.end_session_endpoint if config.respond_to?(:end_session_endpoint)
+
+        # Keep issuer consistent with what the provider advertises so later token verification uses the correct issuer.
+        options.issuer = config.issuer if config.respond_to?(:issuer) && config.issuer
       end
 
       def user_info
