@@ -115,16 +115,17 @@ module OmniAuth
       end
 
       def request_phase
+        puts "\nHERE I AM\n"
         # Debug logging to diagnose issuer issues
         if defined?(Rails) && Rails.logger
-          Rails.logger.debug "[OpenIDConnect] request_phase - options.issuer BEFORE: #{options.issuer.inspect}"
-          Rails.logger.debug "[OpenIDConnect] request_phase - options.issuer.to_s.empty?: #{options.issuer.to_s.empty?}"
+          puts "[OpenIDConnect] request_phase - options.issuer BEFORE: #{options.issuer.inspect}"
+          puts "[OpenIDConnect] request_phase - options.issuer.to_s.empty?: #{options.issuer.to_s.empty?}"
         end
         
-        options.issuer = issuer if options.issuer.to_s.empty?
+        options.issuer = issuer if issuer_empty?
         
         if defined?(Rails) && Rails.logger
-          Rails.logger.debug "[OpenIDConnect] request_phase - options.issuer AFTER: #{options.issuer.inspect}"
+          puts "[OpenIDConnect] request_phase - options.issuer AFTER: #{options.issuer.inspect}"
         end
         
         discover!
@@ -146,7 +147,7 @@ module OmniAuth
 
         return unless valid_response_type?
 
-        options.issuer = issuer if options.issuer.nil? || options.issuer.empty?
+        options.issuer = issuer if issuer_empty?
 
         verify_id_token!(params['id_token']) if configured_response_type == 'id_token'
         discover!
@@ -169,7 +170,7 @@ module OmniAuth
 
       def other_phase
         if logout_path_pattern.match?(current_path)
-          options.issuer = issuer if options.issuer.to_s.empty?
+          options.issuer = issuer if issuer_empty?
           discover!
           return redirect(end_session_uri) if end_session_uri
         end
@@ -262,6 +263,15 @@ module OmniAuth
         ::OpenIDConnect::Discovery::Provider.discover!(resource).issuer
       end
 
+      # Helper method to safely check if issuer is empty, handling Proc/lambda values
+      def issuer_empty?
+        return true if options.issuer.nil?
+        
+        issuer_value = options.issuer
+        issuer_value = issuer_value.call if issuer_value.respond_to?(:call)
+        issuer_value.to_s.empty?
+      end
+
       # When discovery is enabled we need a *stable* base URL.
       #
       # If the user provides an issuer without an explicit scheme (e.g. "keycloak:8080/realms/foo"),
@@ -270,19 +280,23 @@ module OmniAuth
       # Recommended behavior: only trust options.issuer for discovery if it is an absolute URI with http/https scheme.
       # Otherwise, fall back to client_options.scheme/host/port.
       def discovery_base_url
-        issuer = options.issuer.to_s
+        # Handle Proc/lambda for options.issuer (common pattern for runtime evaluation)
+        issuer_value = options.issuer
+        issuer_value = issuer_value.call if issuer_value.respond_to?(:call)
+        issuer = issuer_value.to_s
         
         # Debug logging to see what we're working with
         if defined?(Rails) && Rails.logger
-          Rails.logger.debug "[OpenIDConnect] discovery_base_url - options.issuer: #{options.issuer.inspect}"
-          Rails.logger.debug "[OpenIDConnect] discovery_base_url - issuer string: #{issuer}"
+          puts "[OpenIDConnect] discovery_base_url - options.issuer: #{options.issuer.inspect}"
+          puts "[OpenIDConnect] discovery_base_url - issuer value: #{issuer_value.inspect}"
+          puts "[OpenIDConnect] discovery_base_url - issuer string: #{issuer}"
         end
         
         if issuer.match?(/\Ahttps?:\/\//)
           # Use the full issuer URL as-is for discovery
           # The discovery endpoint will be: issuer + '/.well-known/openid-configuration'
           if defined?(Rails) && Rails.logger
-            Rails.logger.debug "[OpenIDConnect] discovery_base_url - using issuer as-is: #{issuer}"
+            puts "[OpenIDConnect] discovery_base_url - using issuer as-is: #{issuer}"
           end
           issuer
         else
@@ -290,7 +304,7 @@ module OmniAuth
           resource = "#{client_options.scheme}://#{client_options.host}"
           resource = "#{resource}:#{client_options.port}" if client_options.port
           if defined?(Rails) && Rails.logger
-            Rails.logger.debug "[OpenIDConnect] discovery_base_url - constructed from client_options: #{resource}"
+            puts "[OpenIDConnect] discovery_base_url - constructed from client_options: #{resource}"
           end
           resource
         end
@@ -327,7 +341,8 @@ module OmniAuth
 
       def discover!
         return unless options.discovery
-
+        puts "I am in discover"
+        puts config
         client_options.authorization_endpoint = config.authorization_endpoint
         client_options.token_endpoint = config.token_endpoint
         client_options.userinfo_endpoint = config.userinfo_endpoint
