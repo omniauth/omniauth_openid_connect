@@ -146,7 +146,7 @@ module OmniAuth
         config.stubs(:token_endpoint).returns('http://keycloak:8080/token')
         config.stubs(:userinfo_endpoint).returns('http://keycloak:8080/userinfo')
         config.stubs(:jwks_uri).returns('http://keycloak:8080/jwks')
-        ::OpenIDConnect::Discovery::Provider::Config.stubs(:discover!).with('http://keycloak:8080').returns(config)
+        ::OpenIDConnect::Discovery::Provider::Config.stubs(:discover!).with('http://keycloak:8080/realms/quepid').returns(config)
 
         strategy.expects(:redirect).with(regexp_matches(expected_redirect))
         strategy.request_phase

@@ -261,18 +261,11 @@ module OmniAuth
       def discovery_base_url
         issuer = options.issuer.to_s
         if issuer.match?(/\Ahttps?:\/\//)
-          uri = URI.parse(issuer)
-          # If path is empty or just '/', use issuer as-is (it's already a base URL)
-          if uri.path.nil? || uri.path.empty? || uri.path == '/'
-            issuer
-          else
-            # Has a real path beyond '/', extract base URL
-            resource = "#{uri.scheme}://#{uri.host}"
-            default_port = (uri.scheme == 'https') ? 443 : 80
-            resource = "#{resource}:#{uri.port}" if uri.port != default_port
-            resource
-          end
+          # Use the full issuer URL as-is for discovery
+          # The discovery endpoint will be: issuer + '/.well-known/openid-configuration'
+          issuer
         else
+          # Issuer doesn't have a scheme, construct URL from client_options
           resource = "#{client_options.scheme}://#{client_options.host}"
           resource = "#{resource}:#{client_options.port}" if client_options.port
           resource
