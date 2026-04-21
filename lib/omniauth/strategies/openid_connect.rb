@@ -252,13 +252,9 @@ module OmniAuth
         ::OpenIDConnect::Discovery::Provider.discover!(resource).issuer
       end
 
-      # Helper method to safely check if issuer is empty, handling Proc/lambda values
+      # Helper method to safely check if issuer is empty
       def issuer_empty?
-        return true if options.issuer.nil?
-        
-        issuer_value = options.issuer
-        issuer_value = issuer_value.call if issuer_value.respond_to?(:call)
-        issuer_value.to_s.empty?
+        options.issuer.nil? || options.issuer.to_s.empty?
       end
 
       # When discovery is enabled we need a *stable* base URL.
@@ -269,10 +265,7 @@ module OmniAuth
       # Recommended behavior: only trust options.issuer for discovery if it is an absolute URI with http/https scheme.
       # Otherwise, fall back to client_options.scheme/host/port.
       def discovery_base_url
-        # Handle Proc/lambda for options.issuer (common pattern for runtime evaluation)
-        issuer_value = options.issuer
-        issuer_value = issuer_value.call if issuer_value.respond_to?(:call)
-        issuer = issuer_value.to_s
+        issuer = options.issuer.to_s
         
         if issuer.match?(/\Ahttps?:\/\//)
           # Use the full issuer URL as-is for discovery
