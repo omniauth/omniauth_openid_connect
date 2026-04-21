@@ -240,11 +240,11 @@ module OmniAuth
       def configure_ssl_verification
         return if @ssl_configured
 
-        # Configure SSL verification for the HTTPClient used by openid_connect gem
+        # Configure SSL verification for the Faraday connection used by openid_connect gem
         # This affects discovery, jwks_uri fetching, and token endpoint requests
         unless client_options.ssl_verify
           ::OpenIDConnect.http_config do |config|
-            config.ssl_config.verify_mode = OpenSSL::SSL::VERIFY_NONE
+            config.ssl.verify = false
           end
         end
 

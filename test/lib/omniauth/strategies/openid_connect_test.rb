@@ -978,13 +978,13 @@ module OmniAuth
 
       def test_ssl_verify_can_be_disabled
         strategy.options.client_options.ssl_verify = false
-        
-        # Mock the OpenIDConnect http_config to verify it's called
-        config_block = nil
+
+        # Mock the OpenIDConnect http_config to verify it's called with Faraday API
         ::OpenIDConnect.stubs(:http_config).yields(mock_http_config = mock('http_config'))
-        mock_http_config.stubs(:ssl_config).returns(mock_ssl_config = mock('ssl_config'))
-        mock_ssl_config.expects(:verify_mode=).with(OpenSSL::SSL::VERIFY_NONE)
-        
+        mock_ssl = mock('ssl')
+        mock_http_config.stubs(:ssl).returns(mock_ssl)
+        mock_ssl.expects(:verify=).with(false)
+
         # Trigger SSL configuration by accessing client
         strategy.client
       end
