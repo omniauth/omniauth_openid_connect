@@ -74,8 +74,6 @@ end
 
 ### with Devise
 ```ruby
-</text>
-
 Devise.setup do |config|
   config.omniauth :openid_connect, {
     name: :my_provider,
@@ -141,7 +139,7 @@ These are the configuration options for the client_options hash of the configura
 | userinfo_endpoint      | The user info endpoint on the authorization server              | /userinfo  | yes                    |
 | jwks_uri               | The jwks_uri on the authorization server                        | /jwk       | yes                    |
 | end_session_endpoint   | The url to call to log the user out at the authorization server | nil        | yes                    |
-| ssl_verify             | Enable or disable SSL certificate verification (set to false for self-signed certificates) | true       |                        |
+| ssl_verify             | Control SSL certificate verification (set to false for self-signed certificates) | true       |                        |
 
 ### Additional Configuration Notes
   * `name` is arbitrary, I recommend using the name of your provider. The name
