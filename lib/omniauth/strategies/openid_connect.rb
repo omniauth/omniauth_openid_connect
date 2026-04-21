@@ -277,9 +277,6 @@ module OmniAuth
         if issuer.match?(/\Ahttps?:\/\//)
           # Use the full issuer URL as-is for discovery
           # The discovery endpoint will be: issuer + '/.well-known/openid-configuration'
-          if defined?(Rails) && Rails.logger
-            puts "[OpenIDConnect] discovery_base_url - using issuer as-is: #{issuer}"
-          end
           issuer
         else
           # Issuer doesn't have a scheme, construct URL from client_options
