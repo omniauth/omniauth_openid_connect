@@ -971,6 +971,23 @@ module OmniAuth
         assert(strategy.authorize_uri =~ /#{Regexp.quote(strategy.options.pkce_verifier.call)}/,
                'URI must contain code challenge value')
       end
+
+      def test_ssl_verify_defaults_to_true
+        assert_equal true, strategy.options.client_options.ssl_verify
+      end
+
+      def test_ssl_verify_can_be_disabled
+        strategy.options.client_options.ssl_verify = false
+        
+        # Mock the OpenIDConnect http_config to verify it's called
+        config_block = nil
+        ::OpenIDConnect.stubs(:http_config).yields(mock_http_config = mock('http_config'))
+        mock_http_config.stubs(:ssl_config).returns(mock_ssl_config = mock('ssl_config'))
+        mock_ssl_config.expects(:verify_mode=).with(OpenSSL::SSL::VERIFY_NONE)
+        
+        # Trigger SSL configuration by accessing client
+        strategy.client
+      end
     end
   end
 end

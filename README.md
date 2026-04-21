@@ -48,8 +48,34 @@ Rails.application.config.middleware.use OmniAuth::Builder do
 end
 ```
 
+### For development with self-signed certificates
+
+**WARNING**: Only use this in development/testing environments, never in production!
+
+```ruby
+Rails.application.config.middleware.use OmniAuth::Builder do
+  provider :openid_connect, {
+    name: :my_provider,
+    scope: [:openid, :email, :profile, :address],
+    response_type: :code,
+    uid_field: "preferred_username",
+    client_options: {
+      port: 8443,
+      scheme: "https",
+      host: "myprovider.local",
+      identifier: ENV["OP_CLIENT_ID"],
+      secret: ENV["OP_SECRET_KEY"],
+      redirect_uri: "http://myapp.com/users/auth/openid_connect/callback",
+      ssl_verify: false  # Disable SSL certificate verification for self-signed certs
+    },
+  }
+end
+```
+
 ### with Devise
 ```ruby
+</text>
+
 Devise.setup do |config|
   config.omniauth :openid_connect, {
     name: :my_provider,
@@ -115,6 +141,7 @@ These are the configuration options for the client_options hash of the configura
 | userinfo_endpoint      | The user info endpoint on the authorization server              | /userinfo  | yes                    |
 | jwks_uri               | The jwks_uri on the authorization server                        | /jwk       | yes                    |
 | end_session_endpoint   | The url to call to log the user out at the authorization server | nil        | yes                    |
+| ssl_verify             | Enable or disable SSL certificate verification (set to false for self-signed certificates) | true       |                        |
 
 ### Additional Configuration Notes
   * `name` is arbitrary, I recommend using the name of your provider. The name
@@ -147,6 +174,10 @@ These are the configuration options for the client_options hash of the configura
   this is not in the protocol specifications. In those cases, the `send_scope_to_token_endpoint`
   property can be used to add the attribute to the token request. Initial value is `true`, which means that the
   scope attribute is included by default.
+  * The `ssl_verify` option can be set to `false` to disable SSL certificate verification when using self-signed 
+  certificates in development or testing environments. **WARNING**: This should **NEVER** be used in production 
+  as it disables certificate verification and makes your application vulnerable to man-in-the-middle attacks. 
+  Always use properly signed certificates in production environments.
 
 ## Additional notes
   * In some cases, you may want to go straight to the callback phase - e.g. when requested by a stateless client, like a mobile app.
