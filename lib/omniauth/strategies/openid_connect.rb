@@ -33,7 +33,8 @@ module OmniAuth
                               token_endpoint: '/token',
                               userinfo_endpoint: '/userinfo',
                               jwks_uri: '/jwk',
-                              end_session_endpoint: nil)
+                              end_session_endpoint: nil,
+                              ssl_verify: true)
 
       option :issuer
       option :discovery, false
@@ -106,10 +107,12 @@ module OmniAuth
       end
 
       def client
+        configure_ssl_verification
         @client ||= ::OpenIDConnect::Client.new(client_options)
       end
 
       def config
+        configure_ssl_verification
         @config ||= ::OpenIDConnect::Discovery::Provider::Config.discover!(options.issuer)
       end
 
@@ -233,6 +236,20 @@ module OmniAuth
       end
 
       private
+
+      def configure_ssl_verification
+        return if @ssl_configured
+
+        # Configure SSL verification for the Faraday connection used by openid_connect gem
+        # This affects discovery, jwks_uri fetching, and token endpoint requests
+        unless client_options.ssl_verify
+          ::OpenIDConnect.http_config do |config|
+            config.ssl.verify = false
+          end
+        end
+
+        @ssl_configured = true
+      end
 
       def fetch_key
         @fetch_key ||= parse_jwk_key(::OpenIDConnect.http_client.get(client_options.jwks_uri).body)
