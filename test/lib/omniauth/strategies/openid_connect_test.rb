@@ -20,6 +20,35 @@ module OmniAuth
         strategy.request_phase
       end
 
+      def test_request_phase_with_http_config
+        received_block = nil
+        original = ::OpenIDConnect.singleton_class.instance_method(:http_config)
+        ::OpenIDConnect.define_singleton_method(:http_config) { |&b| received_block = b }
+
+        block = proc { |faraday| faraday.ssl.verify = false }
+        strategy.options.http_config = block
+        strategy.options.issuer = 'example.com'
+        strategy.options.client_options.host = 'example.com'
+
+        strategy.expects(:redirect)
+        strategy.request_phase
+
+        assert_same block, received_block
+      ensure
+        ::OpenIDConnect.singleton_class.send(:define_method, :http_config, original) if original
+      end
+
+      def test_request_phase_without_http_config
+        strategy.options.http_config = nil
+        strategy.options.issuer = 'example.com'
+        strategy.options.client_options.host = 'example.com'
+
+        ::OpenIDConnect.expects(:http_config).never
+
+        strategy.expects(:redirect)
+        strategy.request_phase
+      end
+
       def test_logout_phase_with_discovery
         expected_redirect = %r{^https://example\.com/logout$}
         strategy.options.client_options.host = 'example.com'
@@ -189,7 +218,7 @@ module OmniAuth
         assert_equal user_info.sub, strategy.uid
       end
 
-      def test_callback_phase(_session = {}, _params = {}) # rubocop:disable Metrics/AbcSize
+      def test_callback_phase(_session = {}, _params = {})
         code = SecureRandom.hex(16)
         state = SecureRandom.hex(16)
         request.stubs(:params).returns('code' => code, 'state' => state)
@@ -269,7 +298,7 @@ module OmniAuth
         strategy.callback_phase
       end
 
-      def test_callback_phase_with_id_token_and_param_provided_nonce # rubocop:disable Metrics/AbcSize
+      def test_callback_phase_with_id_token_and_param_provided_nonce
         code = SecureRandom.hex(16)
         state = SecureRandom.hex(16)
         nonce = SecureRandom.hex(16)

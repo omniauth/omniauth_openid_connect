@@ -71,6 +71,11 @@ module OmniAuth
       }
 
       option :logout_path, '/logout'
+      # Callable invoked with a Faraday connection to configure the underlying
+      # HTTP client used by openid_connect, rack-oauth2, swd, and webfinger.
+      # NOTE: this is a process-global setting and the first non-nil block wins
+      # for the lifetime of the process — see README.
+      option :http_config, nil
 
       def uid
         user_info.raw_attributes[options.uid_field.to_sym] || user_info.sub
@@ -114,12 +119,14 @@ module OmniAuth
       end
 
       def request_phase
+        configure_http!
         options.issuer = issuer if options.issuer.to_s.empty?
         discover!
         redirect authorize_uri
       end
 
       def callback_phase
+        configure_http!
         error = params['error_reason'] || params['error']
         error_description = params['error_description'] || params['error_reason']
         invalid_state =
@@ -157,6 +164,7 @@ module OmniAuth
 
       def other_phase
         if logout_path_pattern.match?(current_path)
+          configure_http!
           options.issuer = issuer if options.issuer.to_s.empty?
           discover!
           return redirect(end_session_uri) if end_session_uri
@@ -176,7 +184,7 @@ module OmniAuth
         end_session_uri.to_s
       end
 
-      def authorize_uri # rubocop:disable Metrics/AbcSize
+      def authorize_uri
         client.redirect_uri = redirect_uri
         opts = {
           response_type: options.response_type,
@@ -248,6 +256,15 @@ module OmniAuth
         resource = "#{ client_options.scheme }://#{ client_options.host }"
         resource = "#{ resource }:#{ client_options.port }" if client_options.port
         ::OpenIDConnect::Discovery::Provider.discover!(resource).issuer
+      end
+
+      # Forwards a user-provided Faraday config block to the underlying
+      # openid_connect gem. The block is process-global and effectively set
+      # once (the gem stores it with ||=), so the first strategy to run wins.
+      def configure_http!
+        return unless options.http_config.respond_to?(:call)
+
+        ::OpenIDConnect.http_config(&options.http_config)
       end
 
       def discover!

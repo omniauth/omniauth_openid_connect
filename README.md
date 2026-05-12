@@ -96,6 +96,7 @@ end
 | jwt_secret_base64            | For HMAC with SHA2 (e.g. HS256) signing algorithms, specify the base64-encoded secret used to sign the JWT token. Defaults to the OAuth2 client secret if not specified. | no       | client_options.secret         | "bXlzZWNyZXQ=\n"                                    |
 | logout_path                  | The log out is only triggered when the request path ends on this path                                                                                                    | no       | '/logout'                     | '/sign_out'                                         |
 | acr_values                   | Authentication Class Reference (ACR) values to be passed to the authorize_uri to enforce a specific level, see [RFC9470](https://www.rfc-editor.org/rfc/rfc9470.html)    | no       | nil                           | "c1 c2"                                             |
+| http_config                  | Callable that receives the underlying Faraday connection used by the openid_connect, rack-oauth2, swd, and webfinger gems. See the note below — this is process-global. | no       | nil                           | `proc { \|f\| f.ssl.verify = false }`               |
 
 ### Client Config Options
 
@@ -147,6 +148,34 @@ These are the configuration options for the client_options hash of the configura
   this is not in the protocol specifications. In those cases, the `send_scope_to_token_endpoint`
   property can be used to add the attribute to the token request. Initial value is `true`, which means that the
   scope attribute is included by default.
+
+### Customising the underlying HTTP client (`http_config`)
+
+The `openid_connect` gem (and its `rack-oauth2`, `swd`, and `webfinger` dependencies) all share a single, process-global Faraday configuration block. Setting `http_config` on this strategy forwards your callable to `OpenIDConnect.http_config`, which lets you configure anything Faraday supports — custom CA bundles, mTLS, timeouts, etc.
+
+```ruby
+provider :openid_connect, {
+  # ...
+  http_config: proc do |faraday|
+    faraday.ssl.ca_file = '/etc/ssl/my-corporate-ca.pem'
+  end
+}
+```
+
+A common dev-only use is to disable certificate verification when the IdP is using a self-signed certificate:
+
+```ruby
+provider :openid_connect, {
+  # ...
+  http_config: proc { |faraday| faraday.ssl.verify = false }
+}
+```
+
+**Important caveats:**
+
+- The block is **process-global**. The underlying gem stores it with `||=`, so the first non-nil block set in the process wins for the lifetime of that process. In a multi-provider setup, this means whichever strategy runs first dictates HTTP behaviour for all of them.
+- **Never set `ssl.verify = false` in production.** It disables certificate validation everywhere the openid_connect gem talks to a server — including the token endpoint and userinfo endpoint — and exposes your app to man-in-the-middle attacks.
+- Prefer scoping the strategy with this option to environments where you need it (e.g. behind an `if Rails.env.development?` guard), and prefer adding a custom CA bundle (`faraday.ssl.ca_file`) over disabling verification.
 
 ## Additional notes
   * In some cases, you may want to go straight to the callback phase - e.g. when requested by a stateless client, like a mobile app.

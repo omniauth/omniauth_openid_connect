@@ -39,7 +39,7 @@ Documentation:
   Enabled: false
 
 Metrics/AbcSize:
-  Max: 60
+  Max: 65
 
 Metrics/ClassLength:
   Max: 300
