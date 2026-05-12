@@ -1,5 +1,7 @@
 # Unreleased
 
+- Add `http_config` option to expose the underlying Faraday configuration block used by `openid_connect`, `rack-oauth2`, `swd`, and `webfinger`. Useful for custom CA bundles, mTLS, or disabling SSL verification against self-signed certs in development. Note: this is process-global state — see README.
+
 # v0.8.0 (2024-07-04)
 
 - Add `send_state` parameter to disable sending of state (https://github.com/omniauth/omniauth_openid_connect/pull/182)
