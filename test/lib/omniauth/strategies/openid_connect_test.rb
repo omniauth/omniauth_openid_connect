@@ -127,6 +127,51 @@ module OmniAuth
         assert_nil strategy.options.client_options.end_session_endpoint
       end
 
+      def test_request_phase_with_discovery_and_custom_discovery_path
+        expected_redirect = %r{^https://example\.com/authorization\?client_id=1234&nonce=\w{32}&response_type=code&scope=openid&state=\w{32}$}
+        strategy.options.client_options.host = 'example.com'
+        strategy.options.discovery = true
+        strategy.options.discovery_path = '.well-known/wallet-openid-configuration'
+
+        issuer = stub('OpenIDConnect::Discovery::Issuer')
+        issuer.stubs(:issuer).returns('https://example.com/')
+        ::OpenIDConnect::Discovery::Provider.stubs(:discover!).returns(issuer)
+
+        config = stub('OpenIDConnect::Discovery::Provder::Config')
+        config.stubs(:authorization_endpoint).returns('https://example.com/authorization')
+        config.stubs(:token_endpoint).returns('https://example.com/token')
+        config.stubs(:userinfo_endpoint).returns('https://example.com/userinfo')
+        config.stubs(:jwks_uri).returns('https://example.com/jwks')
+        ::OpenIDConnect::Discovery::Provider::Config.stubs(:discover!).with(
+          'https://example.com/',
+          {},
+          discovery_path: '.well-known/wallet-openid-configuration'
+        ).returns(config)
+
+        strategy.expects(:redirect).with(regexp_matches(expected_redirect))
+        strategy.request_phase
+      end
+
+      def test_request_phase_with_discovery_uses_default_when_no_discovery_path
+        expected_redirect = %r{^https://example\.com/authorization\?client_id=1234&nonce=\w{32}&response_type=code&scope=openid&state=\w{32}$}
+        strategy.options.client_options.host = 'example.com'
+        strategy.options.discovery = true
+
+        issuer = stub('OpenIDConnect::Discovery::Issuer')
+        issuer.stubs(:issuer).returns('https://example.com/')
+        ::OpenIDConnect::Discovery::Provider.stubs(:discover!).returns(issuer)
+
+        config = stub('OpenIDConnect::Discovery::Provder::Config')
+        config.stubs(:authorization_endpoint).returns('https://example.com/authorization')
+        config.stubs(:token_endpoint).returns('https://example.com/token')
+        config.stubs(:userinfo_endpoint).returns('https://example.com/userinfo')
+        config.stubs(:jwks_uri).returns('https://example.com/jwks')
+        ::OpenIDConnect::Discovery::Provider::Config.stubs(:discover!).with('https://example.com/').returns(config)
+
+        strategy.expects(:redirect).with(regexp_matches(expected_redirect))
+        strategy.request_phase
+      end
+
       def test_request_phase_with_response_mode
         expected_redirect = %r{^https://example\.com/authorize\?client_id=1234&nonce=\w{32}&response_mode=form_post&response_type=id_token&scope=openid&state=\w{32}$}
         strategy.options.issuer = 'example.com'

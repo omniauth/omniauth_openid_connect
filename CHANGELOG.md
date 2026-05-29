@@ -1,5 +1,7 @@
 # Unreleased
 
+- Add `discovery_path` option to customize the OpenID Connect discovery document path (default: `.well-known/openid-configuration`). Useful for providers that publish their configuration at a non-standard path.
+
 # v0.8.0 (2024-07-04)
 
 - Add `send_state` parameter to disable sending of state (https://github.com/omniauth/omniauth_openid_connect/pull/182)

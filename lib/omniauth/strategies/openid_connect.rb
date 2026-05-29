@@ -37,6 +37,7 @@ module OmniAuth
 
       option :issuer
       option :discovery, false
+      option :discovery_path, nil
       option :client_signing_alg
       option :jwt_secret_base64
       option :client_jwk_signing_key
@@ -110,7 +111,13 @@ module OmniAuth
       end
 
       def config
-        @config ||= ::OpenIDConnect::Discovery::Provider::Config.discover!(options.issuer)
+        @config ||= if options.discovery_path
+                      ::OpenIDConnect::Discovery::Provider::Config.discover!(
+                        options.issuer, {}, discovery_path: options.discovery_path
+                      )
+                    else
+                      ::OpenIDConnect::Discovery::Provider::Config.discover!(options.issuer)
+                    end
       end
 
       def request_phase
