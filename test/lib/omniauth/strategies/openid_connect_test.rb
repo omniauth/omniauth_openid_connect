@@ -144,7 +144,6 @@ module OmniAuth
         config.stubs(:jwks_uri).returns('https://example.com/jwks')
         ::OpenIDConnect::Discovery::Provider::Config.stubs(:discover!).with(
           'https://example.com/',
-          {},
           discovery_path: '.well-known/wallet-openid-configuration'
         ).returns(config)
 

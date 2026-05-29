@@ -111,13 +111,9 @@ module OmniAuth
       end
 
       def config
-        @config ||= if options.discovery_path
-                      ::OpenIDConnect::Discovery::Provider::Config.discover!(
-                        options.issuer, {}, discovery_path: options.discovery_path
-                      )
-                    else
-                      ::OpenIDConnect::Discovery::Provider::Config.discover!(options.issuer)
-                    end
+        discover_opts = {}
+        discover_opts[:discovery_path] = options.discovery_path if options.discovery_path
+        @config ||= ::OpenIDConnect::Discovery::Provider::Config.discover!(options.issuer, **discover_opts)
       end
 
       def request_phase
