@@ -280,7 +280,7 @@ module OmniAuth
         if access_token.id_token
           decoded = decode_id_token(access_token.id_token).raw_attributes
 
-          if options.id_token_encryption_alg.present?
+          if !options.id_token_encryption_alg.to_s.empty?
             # When JWE encryption is configured, the userinfo endpoint may also return an
             # encrypted response (e.g. with Content-Type: application/jwt). The openid_connect
             # gem calls res.body.with_indifferent_access which fails on a JWE string, so we
@@ -288,9 +288,10 @@ module OmniAuth
             userinfo = fetch_userinfo_attributes
             # OIDC Core §5.3.2: the sub in the UserInfo response MUST exactly match the sub
             # in the ID Token; if they differ, the UserInfo response MUST NOT be used.
-            if userinfo.present? && userinfo[:sub].to_s != decoded[:sub].to_s
+            if !userinfo.empty? && userinfo[:sub].to_s != decoded[:sub].to_s
               raise CallbackError, error: :userinfo_sub_mismatch,
-                                   reason: "UserInfo sub (#{userinfo[:sub].inspect}) does not match ID token sub (#{decoded[:sub].inspect})"
+                                   reason: "UserInfo sub (#{userinfo[:sub].inspect}) does not match " \
+                                           "ID token sub (#{decoded[:sub].inspect})"
             end
             @user_info = ::OpenIDConnect::ResponseObject::UserInfo.new(userinfo.merge(decoded))
           else
@@ -316,7 +317,7 @@ module OmniAuth
         # openid_connect gem does for the ID token). In practice, TLS transport and the
         # requirement for the attacker to also possess the decryption key make active
         # forgery very difficult, but this is a known limitation.
-        JSON::JWT.decode(jwt_string, :skip_verification).to_h.with_indifferent_access
+        JSON::JWT.decode(jwt_string, :skip_verification).to_h.transform_keys(&:to_sym)
       rescue CallbackError, JSON::JWT::Exception => e
         OmniAuth.logger.warn "[OIDC] Failed to decrypt userinfo response: #{e.class}: #{e.message}"
         {}
@@ -526,16 +527,16 @@ module OmniAuth
       def decrypt_jwe(jwe_token)
         alg = options.id_token_encryption_alg.to_s
         key = resolve_encryption_key
+        # Use plain .empty? (not .strip.empty?) so binary `dir` keys whose first/last
+        # byte happens to be whitespace are not falsely rejected.
+        raise_missing_key(:id_token_encryption_key) if key.to_s.empty?
 
         case alg
         when 'RSA-OAEP'
-          raise_missing_key(:id_token_encryption_key) if key.nil? || key.to_s.strip.empty?
           JSON::JWE.decode_compact_serialized(jwe_token, OpenSSL::PKey.read(key)).plain_text
         when 'RSA-OAEP-256'
-          raise_missing_key(:id_token_encryption_key) if key.nil? || key.to_s.strip.empty?
           decrypt_rsa_oaep_256(jwe_token, OpenSSL::PKey.read(key))
         when 'dir'
-          raise_missing_key(:id_token_encryption_key) if key.nil? || key.to_s.empty?
           decrypt_dir(jwe_token, key)
         else
           raise CallbackError, error: :jwe_decryption_failed,
@@ -543,7 +544,7 @@ module OmniAuth
         end
       rescue JSON::JWE::DecryptionFailed, JSON::JWE::InvalidFormat, JSON::JWE::UnexpectedAlgorithm,
              OpenSSL::PKey::PKeyError, OpenSSL::Cipher::CipherError,
-             JSON::ParserError, ArgumentError, NoMethodError => e
+             JSON::ParserError, ArgumentError => e
         raise CallbackError, error: :jwe_decryption_failed, reason: "JWE decryption failed: #{e.message}"
       end
 
@@ -644,7 +645,7 @@ module OmniAuth
       # rubocop:enable Metrics/ParameterLists
 
       def resolve_encryption_key
-        if options.id_token_encryption_key_file.present?
+        if !options.id_token_encryption_key_file.to_s.empty?
           File.read(options.id_token_encryption_key_file)
         else
           options.id_token_encryption_key
