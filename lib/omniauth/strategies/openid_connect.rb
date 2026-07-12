@@ -157,6 +157,12 @@ module OmniAuth
 
       def other_phase
         if logout_path_pattern.match?(current_path)
+          
+          # Add the strategy and call the setup phase, so we can have a dynamic post_logout_redirect_uri
+          # This mimics what OmniAuth::Strategy does before the request_phase or callback_phase
+          @env['omniauth.strategy'] = self
+          setup_phase
+
           options.issuer = issuer if options.issuer.to_s.empty?
           discover!
           return redirect(end_session_uri) if end_session_uri
