@@ -120,8 +120,8 @@ module OmniAuth
       end
 
       def callback_phase
-        error = params['error_reason'] || params['error']
-        error_description = params['error_description'] || params['error_reason']
+        error = params['error']
+        error_description = params['error_description']
         invalid_state =
           if options.send_state
             (options.require_state && params['state'].to_s.empty?) || params['state'] != stored_state

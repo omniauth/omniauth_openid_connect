@@ -610,11 +610,26 @@ module OmniAuth
 
       def test_callback_phase_with_error
         state = SecureRandom.hex(16)
-        request.stubs(:params).returns('error' => 'invalid_request')
+        request.stubs(:params).returns(
+          'error' => 'invalid_request',
+          'error_description' => 'Unsupported response_type value',
+          'error_uri' => 'https://example.com/errors/invalid_request'
+        )
         request.stubs(:path).returns('')
 
         strategy.call!({ 'rack.session' => { 'omniauth.state' => state, 'omniauth.nonce' => nonce } })
-        strategy.expects(:fail!)
+        strategy.expects(:fail!).with('invalid_request', is_a(OmniAuth::Strategies::OpenIDConnect::CallbackError))
+        strategy.callback_phase
+      end
+
+      def test_callback_phase_with_non_standard_error_reason
+        state = SecureRandom.hex(16)
+        request.stubs(:params).returns('error_reason' => 'invalid_request', 'state' => state)
+        request.stubs(:path).returns('')
+
+        strategy.call!({ 'rack.session' => { 'omniauth.state' => state, 'omniauth.nonce' => nonce } })
+
+        strategy.expects(:fail!).with(:missing_code, is_a(OmniAuth::OpenIDConnect::MissingCodeError))
         strategy.callback_phase
       end
 
