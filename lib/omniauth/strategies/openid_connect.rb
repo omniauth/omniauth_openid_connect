@@ -459,9 +459,7 @@ module OmniAuth
         return true if params.key?(configured_response_type)
 
         error_attrs = RESPONSE_TYPE_EXCEPTIONS[configured_response_type]
-        fail!(error_attrs[:key], error_attrs[:exception_class].new(params['error']))
-
-        false
+        raise error_attrs[:exception_class], params['error']
       end
 
       def configured_response_type
