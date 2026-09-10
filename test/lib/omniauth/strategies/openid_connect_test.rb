@@ -636,8 +636,9 @@ module OmniAuth
 
         strategy.call!('rack.session' => { 'omniauth.state' => state, 'omniauth.nonce' => nonce })
 
-        strategy.expects(:fail!).with(:missing_code, is_a(OmniAuth::OpenIDConnect::MissingCodeError))
-        strategy.callback_phase
+        assert_raises(OmniAuth::OpenIDConnect::MissingCodeError) do
+          strategy.callback_phase
+        end
       end
 
       def test_callback_phase_without_id_token
@@ -648,8 +649,9 @@ module OmniAuth
 
         strategy.call!('rack.session' => { 'omniauth.state' => state, 'omniauth.nonce' => nonce })
 
-        strategy.expects(:fail!).with(:missing_id_token, is_a(OmniAuth::OpenIDConnect::MissingIdTokenError))
-        strategy.callback_phase
+        assert_raises(OmniAuth::OpenIDConnect::MissingIdTokenError) do
+          strategy.callback_phase
+        end
       end
 
       def test_callback_phase_without_id_token_symbol
@@ -660,8 +662,9 @@ module OmniAuth
 
         strategy.call!('rack.session' => { 'omniauth.state' => state, 'omniauth.nonce' => nonce })
 
-        strategy.expects(:fail!).with(:missing_id_token, is_a(OmniAuth::OpenIDConnect::MissingIdTokenError))
-        strategy.callback_phase
+        assert_raises(OmniAuth::OpenIDConnect::MissingIdTokenError) do
+          strategy.callback_phase
+        end
       end
 
       def test_callback_phase_with_timeout
