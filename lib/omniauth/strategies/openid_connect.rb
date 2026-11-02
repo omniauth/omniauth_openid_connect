@@ -307,7 +307,7 @@ module OmniAuth
           when :HS256, :HS384, :HS512
             secret
           else
-            public_key
+            discovered_jwk(decoded.kid) || public_key
           end
 
         decoded.verify!(keyset)
@@ -325,6 +325,15 @@ module OmniAuth
         raise unless decoded
 
         decoded
+      end
+
+      # Looks the key up by kid the way ::OpenIDConnect::ResponseObject::IdToken.decode
+      # does with a discovery config: JSON::JWK::Set::Fetcher caches the JWKS in
+      # JSON::JWK::Set::Fetcher.cache and fetches it again when a new kid appears.
+      def discovered_jwk(kid)
+        return unless options.discovery && kid
+
+        JSON::JWK::Set::Fetcher.fetch(config.jwks_uri, kid: kid)
       end
 
       # If client_signing_alg is specified, we check that the returned JWT
