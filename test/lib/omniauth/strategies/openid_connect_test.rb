@@ -943,8 +943,8 @@ module OmniAuth
         # test pkce disabled
         strategy.options.pkce = false
 
-        assert((strategy.authorize_uri !~ /code_challenge=/), 'URI must not contain code challenge param')
-        assert((strategy.authorize_uri !~ /code_challenge_method=/), 'URI must not contain code challenge method param')
+        assert(strategy.authorize_uri !~ /code_challenge=/, 'URI must not contain code challenge param')
+        assert(strategy.authorize_uri !~ /code_challenge_method=/, 'URI must not contain code challenge method param')
 
         # test pkce enabled with default opts
         strategy.options.pkce = true
