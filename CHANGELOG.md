@@ -1,5 +1,7 @@
 # Unreleased
 
+- Prefer the session nonce over the `nonce` callback parameter when verifying ID tokens
+
 # v0.8.0 (2024-07-04)
 
 - Add `send_state` parameter to disable sending of state (https://github.com/omniauth/omniauth_openid_connect/pull/182)

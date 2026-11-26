@@ -301,6 +301,65 @@ module OmniAuth
         strategy.callback_phase
       end
 
+      def test_callback_phase_with_id_token_rejects_param_nonce_when_session_has_nonce
+        state = SecureRandom.hex(16)
+        request.stubs(:params).returns('id_token' => jwt.to_s, 'state' => state, 'nonce' => nonce)
+        request.stubs(:path).returns('')
+
+        strategy.options.issuer = issuer
+        strategy.options.client_signing_alg = :RS256
+        strategy.options.client_jwk_signing_key = jwks.to_json
+        strategy.options.response_type = 'id_token'
+
+        strategy.call!('rack.session' => { 'omniauth.state' => state, 'omniauth.nonce' => SecureRandom.hex(16) })
+
+        assert_raises ::OpenIDConnect::ResponseObject::IdToken::InvalidNonce do
+          strategy.callback_phase
+        end
+      end
+
+      def test_callback_phase_with_code_rejects_param_nonce_when_session_has_nonce
+        state = SecureRandom.hex(16)
+        request.stubs(:params).returns('code' => SecureRandom.hex(16), 'state' => state, 'nonce' => nonce)
+        request.stubs(:path).returns('')
+
+        strategy.options.issuer = issuer
+        strategy.options.client_signing_alg = :RS256
+        strategy.options.client_jwk_signing_key = jwks.to_json
+        strategy.options.response_type = 'code'
+        strategy.stubs(:discover!)
+
+        access_token = stub('OpenIDConnect::AccessToken')
+        access_token.stubs(:access_token)
+        access_token.stubs(:refresh_token)
+        access_token.stubs(:expires_in)
+        access_token.stubs(:scope)
+        access_token.stubs(:id_token).returns(jwt.to_s)
+        client.stubs(:access_token!).returns(access_token)
+
+        strategy.call!('rack.session' => { 'omniauth.state' => state, 'omniauth.nonce' => SecureRandom.hex(16) })
+
+        assert_raises ::OpenIDConnect::ResponseObject::IdToken::InvalidNonce do
+          strategy.callback_phase
+        end
+      end
+
+      def test_callback_phase_with_id_token_accepts_param_nonce_without_session
+        request.stubs(:params).returns('id_token' => jwt.to_s, 'nonce' => nonce)
+        request.stubs(:path).returns('')
+
+        strategy.options.issuer = issuer
+        strategy.options.client_signing_alg = :RS256
+        strategy.options.client_jwk_signing_key = jwks.to_json
+        strategy.options.response_type = 'id_token'
+        strategy.options.send_state = false
+
+        strategy.call!('rack.session' => {})
+        strategy.callback_phase
+
+        assert_equal payload[:sub], strategy.env['omniauth.auth']['uid']
+      end
+
       def test_callback_phase_with_id_token_no_kid
         other_rsa_private = OpenSSL::PKey::RSA.generate(2048)
 

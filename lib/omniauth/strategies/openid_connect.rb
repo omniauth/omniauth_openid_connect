@@ -474,7 +474,7 @@ module OmniAuth
         verify_kwargs = {
           issuer: options.issuer,
           client_id: client_options.identifier,
-          nonce: params['nonce'].presence || stored_nonce,
+          nonce: stored_nonce.presence || params['nonce'].presence,
         }
         verify_kwargs.merge!(audience: client_options.audience) if client_options.audience
 
