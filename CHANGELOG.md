@@ -1,5 +1,7 @@
 # Unreleased
 
+- Drop support for Ruby 2.7 and 3.0. Ruby 3.1 or higher is now required.
+
 # v0.8.1 (2026-11-27)
 
 - Prefer the session nonce over the `nonce` callback parameter when verifying ID tokens (https://github.com/omniauth/omniauth_openid_connect/security/advisories/GHSA-f933-58j6-h68w)
