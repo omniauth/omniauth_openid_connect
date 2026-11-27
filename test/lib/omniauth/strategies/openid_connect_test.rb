@@ -693,7 +693,7 @@ module OmniAuth
         assert_equal({ raw_info: user_info.as_json }, strategy.extra)
       end
 
-      def test_credentials
+      def test_credentials # rubocop:disable Metrics/AbcSize
         strategy.options.issuer = 'example.com'
         strategy.options.client_signing_alg = :RS256
         strategy.options.client_jwk_signing_key = jwks.to_json
