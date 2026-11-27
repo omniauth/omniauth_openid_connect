@@ -76,7 +76,7 @@ module OmniAuth
         strategy.instance_variable_set(:@env, {})
         strategy.options.client_options.host = 'example.com'
         strategy.options.discovery = true
-        strategy.options.setup = proc { |env| 
+        strategy.options.setup = proc { |env|
           env['omniauth.strategy'].options[:post_logout_redirect_uri] = 'https://mysite.com'
         }
 
