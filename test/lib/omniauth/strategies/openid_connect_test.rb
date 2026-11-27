@@ -342,7 +342,7 @@ module OmniAuth
           strategy.callback_phase
         end
 
-        assert_match %r{kid '.*' not found}, error.message
+        assert_match(/kid '.*' not found/, error.message)
       end
 
       def test_callback_phase_with_id_token_with_hs256
