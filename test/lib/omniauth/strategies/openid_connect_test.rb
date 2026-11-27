@@ -533,6 +533,72 @@ module OmniAuth
         strategy.callback_phase
       end
 
+      def test_callback_phase_with_discovery_caches_jwks_by_kid
+        JSON::JWK::Set::Fetcher.cache = ActiveSupport::Cache::MemoryStore.new
+        key = JSON::JWK.new(private_key)
+        stub_jwks_uri(key)
+
+        2.times { discovery_id_token_callback(JSON::JWT.new(payload).sign(key, :RS256)) }
+
+        assert_requested :get, 'https://example.com/jwks', times: 1
+      ensure
+        JSON::JWK::Set::Fetcher.cache = JSON::JWK::Set::Fetcher::Cache.new
+      end
+
+      def test_callback_phase_with_discovery_after_key_rotation
+        JSON::JWK::Set::Fetcher.cache = ActiveSupport::Cache::MemoryStore.new
+        old_key = JSON::JWK.new(private_key)
+        new_key = JSON::JWK.new(OpenSSL::PKey::RSA.generate(2048))
+        stub_jwks_uri(old_key).then.to_return(jwks_response(old_key, new_key))
+
+        discovery_id_token_callback(JSON::JWT.new(payload).sign(old_key, :RS256))
+        discovery_id_token_callback(JSON::JWT.new(payload).sign(new_key, :RS256))
+
+        assert_requested :get, 'https://example.com/jwks', times: 2
+      ensure
+        JSON::JWK::Set::Fetcher.cache = JSON::JWK::Set::Fetcher::Cache.new
+      end
+
+      def test_callback_phase_with_discovery_rejects_a_kid_missing_from_the_jwks
+        JSON::JWK::Set::Fetcher.cache = ActiveSupport::Cache::MemoryStore.new
+        stub_jwks_uri(JSON::JWK.new(private_key))
+        unknown_key = JSON::JWK.new(OpenSSL::PKey::RSA.generate(2048))
+
+        assert_raises JSON::JWK::Set::KidNotFound do
+          discovery_id_token_callback(JSON::JWT.new(payload).sign(unknown_key, :RS256))
+        end
+      ensure
+        JSON::JWK::Set::Fetcher.cache = JSON::JWK::Set::Fetcher::Cache.new
+      end
+
+      def test_callback_phase_with_discovery_fetches_jwks_once_without_a_cache
+        key = JSON::JWK.new(private_key)
+        stub_jwks_uri(key)
+
+        discovery_id_token_callback(JSON::JWT.new(payload).sign(key, :RS256))
+
+        assert_requested :get, 'https://example.com/jwks', times: 1
+      end
+
+      def test_callback_phase_with_discovery_and_code_fetches_jwks_once_without_a_cache
+        key = JSON::JWK.new(private_key)
+        stub_jwks_uri(key)
+
+        discovery_code_callback(JSON::JWT.new(payload).sign(key, :RS256))
+
+        assert_requested :get, 'https://example.com/jwks', times: 1
+      end
+
+      def test_callback_phase_with_discovery_fetches_jwks_with_openid_connect_http_client_without_a_cache
+        key = JSON::JWK.new(private_key)
+        stub_jwks_uri(key)
+
+        discovery_id_token_callback(JSON::JWT.new(payload).sign(key, :RS256))
+
+        assert_requested :get, 'https://example.com/jwks',
+                         headers: { 'User-Agent' => "OpenIDConnect (#{::OpenIDConnect::VERSION})" }, times: 1
+      end
+
       def test_callback_phase_with_send_state_disabled # rubocop:disable Metrics/AbcSize
         code = SecureRandom.hex(16)
 
@@ -1029,6 +1095,53 @@ module OmniAuth
 
         assert(strategy.authorize_uri =~ /#{Regexp.quote(strategy.options.pkce_verifier.call)}/,
                'URI must contain code challenge value')
+      end
+
+      private
+
+      def stub_jwks_uri(key)
+        stub_request(:get, 'https://example.com/jwks').to_return(jwks_response(key))
+      end
+
+      def jwks_response(*keys)
+        { body: { keys: keys }.to_json, headers: { 'Content-Type' => 'application/json' } }
+      end
+
+      def discovery_id_token_callback(id_token)
+        state = stub_discovery_callback('id_token' => id_token.to_s)
+        strategy.options.response_type = 'id_token'
+        strategy.call!('rack.session' => { 'omniauth.state' => state, 'omniauth.nonce' => nonce })
+        strategy.callback_phase
+      end
+
+      def discovery_code_callback(id_token)
+        state = stub_discovery_callback('code' => SecureRandom.hex(16))
+        access_token = stub('OpenIDConnect::AccessToken', access_token: nil, refresh_token: nil, expires_in: nil,
+                                                          scope: nil, id_token: id_token.to_s)
+        access_token.stubs(:userinfo!).returns(user_info)
+        client.stubs(:access_token!).returns(access_token)
+        strategy.call!('rack.session' => { 'omniauth.state' => state, 'omniauth.nonce' => nonce })
+        strategy.callback_phase
+      end
+
+      def stub_discovery_callback(params)
+        @strategy = nil
+        state = SecureRandom.hex(16)
+        request.stubs(:params).returns(params.merge('state' => state))
+        request.stubs(:path_info).returns('')
+
+        config = ::OpenIDConnect::Discovery::Provider::Config::Response.new(
+          issuer: issuer,
+          authorization_endpoint: 'https://example.com/authorization',
+          jwks_uri: 'https://example.com/jwks'
+        )
+        ::OpenIDConnect::Discovery::Provider::Config.stubs(:discover!).with(issuer).returns(config)
+
+        strategy.options.issuer = issuer
+        strategy.options.discovery = true
+        strategy.unstub(:user_info)
+        strategy.expects(:fail!).never
+        state
       end
     end
   end
