@@ -189,6 +189,7 @@ module OmniAuth
           nonce: (new_nonce if options.send_nonce),
           hd: options.hd,
           acr_values: options.acr_values,
+          max_age: options.max_age,
         }
 
         opts[:state] = new_state if options.send_state
