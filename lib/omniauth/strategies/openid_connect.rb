@@ -283,6 +283,7 @@ module OmniAuth
         token_request_params[:code_verifier] = params['code_verifier'] || session.delete('omniauth.pkce.verifier') if options.pkce
 
         @access_token = client.access_token!(token_request_params)
+        @access_token = @access_token.to_mtls if options.client_auth_method.match?(/mtls/)
         verify_id_token!(@access_token.id_token) if configured_response_type == 'code'
 
         @access_token
