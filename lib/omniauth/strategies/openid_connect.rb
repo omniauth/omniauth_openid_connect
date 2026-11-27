@@ -318,7 +318,10 @@ module OmniAuth
         # done. However, if there is no kid, then we try each key
         # individually to see if one works:
         # https://github.com/nov/json-jwt/pull/92#issuecomment-824654949
-        raise if decoded&.header&.key?('kid')
+        if decoded&.header&.key?('kid')
+          kid = decoded.header['kid']
+          raise JSON::JWK::Set::KidNotFound, "kid '#{kid}' not found"
+        end
 
         decoded = decode_with_each_key!(id_token, keyset)
 
